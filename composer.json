@@ -1,0 +1,7 @@
+{
+    "name": "true-async/ide-helper",
+    "type": "library",
+    "description": "IDE help files for the TrueAsync",
+    "keywords": ["async", "coroutine", "true-async", "stubs", "ide-helper"],
+    "license": "MIT"
+}
