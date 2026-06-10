@@ -22,9 +22,13 @@ final class TaskGroup implements Awaitable, \Countable, \IteratorAggregate
      * Create a new TaskGroup.
      *
      * @param int|null   $concurrency Maximum concurrent coroutines; null = unlimited.
+     * @param int|null   $queueLimit  Maximum pending tasks in the queue.
+     *   null = 2 * $concurrency (default backpressure); ignored if concurrency is unlimited.
+     *   0   = unbounded queue (may leak memory if the producer outpaces the consumer).
+     *   N   = spawn() suspends the caller when the queue reaches N pending tasks.
      * @param Scope|null $scope       Parent scope; null = current scope.
      */
-    public function __construct(?int $concurrency = null, ?Scope $scope = null) {}
+    public function __construct(?int $concurrency = null, ?int $queueLimit = null, ?Scope $scope = null) {}
 
     /**
      * Spawn a task with an auto-increment key.

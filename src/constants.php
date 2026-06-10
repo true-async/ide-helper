@@ -6,7 +6,7 @@
  * Provides IDE-level type information for the `async` PHP extension.
  *
  * @since      8.6
- * @version    1.0.0
+ * @version    0.7.1
  * @link       https://github.com/true-async/php-async
  */
 

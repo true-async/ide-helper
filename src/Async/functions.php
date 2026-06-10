@@ -331,6 +331,28 @@ function graceful_shutdown(?AsyncCancellation $cancellationError = null): void {
 function signal(Signal $signal, ?Completable $cancellation = null): Future {}
 
 /**
+ * Runtime statistics for coroutines, fibers, and scheduler queues.
+ *
+ * Returns an associative array with snapshots of the scheduler's internal
+ * counters. Cheap (no allocations, no locks) — safe to call from a hot path.
+ *
+ *  - `coroutines_total`         coroutines in the active coroutine map (alive but possibly suspended)
+ *  - `coroutines_active`        running + queued coroutines
+ *  - `microtasks_queue`         pending microtasks (deferred-but-soon)
+ *  - `coroutine_queue`          coroutines waiting for a free fiber
+ *  - `resumed_queue`            coroutines resumed by I/O completion, pending scheduler pickup
+ *  - `fiber_pool_count`         fibers currently parked in the reuse pool
+ *  - `fiber_pool_capacity`      pool ring-buffer capacity
+ *  - `fiber_pool_min`           minimum slots kept warm regardless of demand
+ *  - `fiber_stack_size`         default C stack reservation per fiber (virtual bytes)
+ *  - `fiber_pool_virtual_bytes` fiber_pool_count * fiber_stack_size
+ *
+ * @return array<string, int>
+ * @since 8.6
+ */
+function runtime_stats(): array {}
+
+/**
  * Compute CPU usage since the previous call, with percentages already derived.
  * Convenient for telemetry loops.
  *

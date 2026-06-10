@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Async;
+
 /**
  * Immutable point-in-time snapshot of process and system CPU counters.
  *

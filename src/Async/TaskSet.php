@@ -24,9 +24,10 @@ final class TaskSet implements Awaitable, \Countable, \IteratorAggregate
      * Create a new TaskSet.
      *
      * @param int|null   $concurrency Maximum concurrent coroutines; null = unlimited.
+     * @param int|null   $queueLimit  Maximum pending tasks in the queue (null = 2 * $concurrency).
      * @param Scope|null $scope       Parent scope; null = current scope.
      */
-    public function __construct(?int $concurrency = null, ?Scope $scope = null) {}
+    public function __construct(?int $concurrency = null, ?int $queueLimit = null, ?Scope $scope = null) {}
 
     /**
      * Spawn a task with an auto-increment key.

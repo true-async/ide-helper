@@ -13,4 +13,4 @@ namespace Async;
  * @since 8.6
  * @see https://true-async.github.io/en/docs/components/exceptions.html
  */
-class AsyncCancellation extends \Exception implements \Cancellation {}
+class AsyncCancellation extends \Cancellation {}

@@ -1,7 +1,7 @@
 {
     "name": "true-async/ide-helper",
     "type": "library",
-    "description": "IDE help files for the TrueAsync",
-    "keywords": ["async", "coroutine", "true-async", "stubs", "ide-helper"],
+    "description": "IDE helper / stubs for the TrueAsync ecosystem: the async extension, the HTTP server, and the ClickHouse client",
+    "keywords": ["async", "coroutine", "true-async", "stubs", "ide-helper", "http-server", "clickhouse"],
     "license": "MIT"
 }
