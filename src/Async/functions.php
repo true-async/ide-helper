@@ -7,10 +7,14 @@ namespace Async;
 /**
  * Spawn a new coroutine in the current scope.
  *
- * @template T
- * @param callable(mixed...): T $task The coroutine body.
- * @param mixed    ...$args  Arguments forwarded to `$task`.
- * @return Coroutine<T> The newly created coroutine (already enqueued).
+ * Arguments after $task are forwarded to it, so $task may have any arity — a
+ * zero-arg closure or a method reference with required parameters. Typing $task as
+ * a plain callable (rather than `callable(mixed...): T`) is deliberate: the latter
+ * rejects callables with required parameters even when matching $args are forwarded.
+ *
+ * @param callable $task    The coroutine body.
+ * @param mixed    ...$args Arguments forwarded to `$task`.
+ * @return Coroutine<mixed> The newly created coroutine (already enqueued).
  * @see https://true-async.github.io/en/docs/reference/spawn.html
  * @since 8.6
  */
@@ -19,11 +23,12 @@ function spawn(callable $task, mixed ...$args): Coroutine {}
 /**
  * Spawn a new coroutine using a custom {@see ScopeProvider}.
  *
- * @template T
+ * As with {@see spawn()}, $task is a plain callable so any arity can take forwarded $args.
+ *
  * @param ScopeProvider $provider Provides the target scope.
- * @param callable(mixed...): T $task     The coroutine body.
+ * @param callable      $task     The coroutine body.
  * @param mixed         ...$args  Arguments forwarded to `$task`.
- * @return Coroutine<T>
+ * @return Coroutine<mixed>
  * @since 8.6
  * @see https://true-async.github.io/en/docs/reference/spawn-with.html
  */
