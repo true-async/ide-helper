@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.3
+
+Synced `TrueAsync\HttpResponse` with the server extension's Server-Sent Events API:
+
+- Added `sseStart()`, `sseEvent()`, `sseComment()` and `sseRetry()` — the `text/event-stream` primitives for pushing live events to an `EventSource` client.
+
 ## 0.7.1
 
 Synced `Async\*` stubs with php-src `ext/async`:
