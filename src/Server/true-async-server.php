@@ -12,7 +12,7 @@
  * and functions the extension registers.
  *
  * @since      8.6
- * @version    0.6.5
+ * @version    0.9.0
  * @link       https://github.com/true-async/server
  */
 
@@ -1118,6 +1118,94 @@ final class HttpServerConfig
      */
     public function isProtocolDetectionEnabled(): bool {}
 
+    // === WebSocket ===
+
+    /**
+     * Maximum reassembled WebSocket message size in bytes.
+     *
+     * Frames whose combined payload exceeds this trigger an RFC 6455
+     * §7.4.1 "Message Too Big" close (1009) and connection teardown.
+     * Default 1048576 (1 MiB). Valid range: 128..268435456 (256 MiB).
+     *
+     * @param int $bytes Maximum message size in bytes
+     * @return static
+     */
+    public function setWsMaxMessageSize(int $bytes): static {}
+
+    /**
+     * Get maximum reassembled WebSocket message size in bytes.
+     */
+    public function getWsMaxMessageSize(): int {}
+
+    /**
+     * Maximum per-frame WebSocket payload size in bytes.
+     *
+     * Defends against fragment-flood attacks where a peer sends millions
+     * of tiny fragments. Default 1048576 (1 MiB). Same valid range as
+     * {@see self::setWsMaxMessageSize()}.
+     *
+     * @param int $bytes Maximum frame size in bytes
+     * @return static
+     */
+    public function setWsMaxFrameSize(int $bytes): static {}
+
+    /**
+     * Get maximum per-frame WebSocket payload size in bytes.
+     */
+    public function getWsMaxFrameSize(): int {}
+
+    /**
+     * Server-initiated WebSocket PING cadence in milliseconds.
+     *
+     * The server sends a PING this often on otherwise-idle connections;
+     * the peer must reply with PONG within {@see self::setWsPongTimeoutMs()}
+     * or the connection is torn down with code 1001 (GoingAway).
+     * Default 30000 (30s). 0 disables automatic ping.
+     *
+     * @param int $ms Ping interval in milliseconds
+     * @return static
+     */
+    public function setWsPingIntervalMs(int $ms): static {}
+
+    /**
+     * Get server-initiated WebSocket PING cadence in milliseconds.
+     */
+    public function getWsPingIntervalMs(): int {}
+
+    /**
+     * WebSocket PONG deadline in milliseconds.
+     *
+     * How long the server waits after a PING before declaring the
+     * connection dead. Default 60000 (60s). 0 disables the timeout.
+     *
+     * @param int $ms Pong deadline in milliseconds
+     * @return static
+     */
+    public function setWsPongTimeoutMs(int $ms): static {}
+
+    /**
+     * Get WebSocket PONG deadline in milliseconds.
+     */
+    public function getWsPongTimeoutMs(): int {}
+
+    /**
+     * Enable RFC 7692 permessage-deflate (per-message WebSocket compression).
+     *
+     * Off by default — opt-in because it costs CPU and widens the
+     * decompression-bomb surface. Negotiated only when the client offers
+     * it; the reassembled-message cap is enforced before and after
+     * inflate. Requires the build to include zlib.
+     *
+     * @param bool $enabled Enable permessage-deflate
+     * @return static
+     */
+    public function setWsPermessageDeflate(bool $enabled): static {}
+
+    /**
+     * Check if RFC 7692 permessage-deflate is enabled.
+     */
+    public function getWsPermessageDeflate(): bool {}
+
     // === TLS configuration ===
 
     /**
@@ -1294,7 +1382,18 @@ final class HttpServer
     public function addStaticHandler(StaticHandler $handler): static {}
 
     /**
-     * Add WebSocket handler.
+     * Add WebSocket handler for full-duplex connections (RFC 6455).
+     *
+     * Upgrade is accepted from HTTP/1.1 and from HTTP/2 (RFC 8441 Extended
+     * CONNECT), plus wss:// over TLS and permessage-deflate (RFC 7692). Each
+     * connection is served by its own coroutine.
+     *
+     * Two handler signatures are supported, detected by the declared
+     * parameter count: `function(WebSocket $ws): void` accepts every
+     * upgrade with default settings; `function(WebSocket $ws, HttpRequest
+     * $request, WebSocketUpgrade $upgrade): void` additionally gives access
+     * to subprotocol negotiation and the ability to reject the upgrade
+     * before the 101 response is sent.
      *
      * @param callable $handler WebSocket handler callback
      * @return static
@@ -1981,6 +2080,332 @@ final class HttpResponse
      * Check if response is closed.
      */
     public function isClosed(): bool {}
+}
+
+// ---------------------------------------------------------------------------
+// WebSocket
+// ---------------------------------------------------------------------------
+
+/**
+ * WebSocket close code registry (RFC 6455 §7.4.1).
+ *
+ * Application-specific codes (4000-4999, RFC 6455 §7.4.2) stay open via
+ * {@see WebSocket::close()} accepting `int` alongside this enum.
+ */
+enum WebSocketCloseCode: int
+{
+    case NORMAL                = 1000;
+    case GOING_AWAY            = 1001;
+    case PROTOCOL_ERROR        = 1002;
+    case UNSUPPORTED_DATA      = 1003;
+    case NO_STATUS             = 1005;
+    case ABNORMAL_CLOSURE      = 1006;
+    case INVALID_FRAME_PAYLOAD = 1007;
+    case POLICY_VIOLATION      = 1008;
+    case MESSAGE_TOO_BIG       = 1009;
+    case MANDATORY_EXTENSION   = 1010;
+    case INTERNAL_SERVER_ERROR = 1011;
+    case TLS_HANDSHAKE         = 1015;
+}
+
+/**
+ * Base exception for all WebSocket errors.
+ *
+ * Extends the project-wide {@see HttpServerException}, so existing
+ * catch-all handlers keep working.
+ */
+class WebSocketException extends HttpServerException
+{
+}
+
+/**
+ * The connection has been closed for a reason other than a normal
+ * peer-initiated handshake.
+ *
+ * `$closeCode` carries the RFC 6455 close code (or 1006 Abnormal Closure
+ * when no CLOSE frame was received); `$closeReason` is the UTF-8 reason
+ * text from the peer's CLOSE payload, or empty when none was provided.
+ * Graceful close (peer-initiated CLOSE 1000) is signalled by
+ * {@see WebSocket::recv()} returning null instead of throwing.
+ */
+final class WebSocketClosedException extends WebSocketException
+{
+    public readonly int $closeCode;
+    public readonly string $closeReason;
+}
+
+/**
+ * Raised by {@see WebSocket::send()} / {@see WebSocket::sendBinary()} when
+ * the outbound queue stays over the high-watermark for longer than
+ * write_timeout_ms.
+ *
+ * Catching this is the application's signal to either close the
+ * connection (slow consumer detected) or drop the message and continue.
+ */
+final class WebSocketBackpressureException extends WebSocketException
+{
+}
+
+/**
+ * Programmer error: a second coroutine called {@see WebSocket::recv()}
+ * while another was already suspended in recv() on the same WebSocket.
+ *
+ * There is no defined semantics for multiple readers on a single byte
+ * stream, so this is rejected at the boundary instead of producing
+ * race-prone behavior. Restructure to a single recv loop that dispatches.
+ */
+final class WebSocketConcurrentReadException extends WebSocketException
+{
+}
+
+/**
+ * One fully-reassembled WebSocket message, as delivered by
+ * {@see WebSocket::recv()}.
+ *
+ * Text messages have already been UTF-8 validated by the framing layer —
+ * receivers can use `$data` as-is without re-checking.
+ */
+final class WebSocketMessage
+{
+    /**
+     * Message payload. For text messages this is valid UTF-8.
+     */
+    public readonly string $data;
+
+    /**
+     * True if the message was sent as a Binary frame (opcode 0x2), false
+     * if Text (opcode 0x1).
+     */
+    public readonly bool $binary;
+
+    /**
+     * Instances are constructed internally by the server. User code
+     * receives them via {@see WebSocket::recv()} — never `new
+     * WebSocketMessage`.
+     */
+    private function __construct() {}
+}
+
+/**
+ * Handle on the in-progress WebSocket upgrade.
+ *
+ * Exists from the moment the handler is invoked until either reject() is
+ * called or the handler returns successfully (in which case the 101 is
+ * dispatched with whatever subprotocol setSubprotocol() selected).
+ *
+ * Surface only available to handlers registered with three parameters:
+ *
+ *   addWebSocketHandler(function (WebSocket $ws, HttpRequest $req,
+ *                                 WebSocketUpgrade $u): void { ... });
+ *
+ * The arity is detected via Reflection at registration; the two-arg form
+ * skips this object entirely and accepts the upgrade with default
+ * settings. Once the handshake commits, calls on this object throw —
+ * subprotocol can no longer change once Sec-WebSocket-Protocol has been
+ * written to the wire.
+ */
+final class WebSocketUpgrade
+{
+    private function __construct() {}
+
+    /**
+     * Reject the upgrade with the given HTTP status.
+     *
+     * The 101 will not be sent; the connection responds with the chosen
+     * status and closes. After reject() the handler should return — no
+     * further I/O is permitted.
+     *
+     * @param int    $status HTTP status code (must be 4xx or 5xx)
+     * @param string $reason Optional response body
+     */
+    public function reject(int $status, string $reason = ''): void {}
+
+    /**
+     * Pick a subprotocol from the client's offered list.
+     *
+     * The selected token will be echoed in Sec-WebSocket-Protocol. Must be
+     * called before the handler returns and before reject(). The token is
+     * not re-validated against {@see self::getOfferedSubprotocols()} — the
+     * caller is responsible for choosing a valid offer.
+     *
+     * @param string $name Subprotocol token to select
+     */
+    public function setSubprotocol(string $name): void {}
+
+    /**
+     * Tokens parsed from Sec-WebSocket-Protocol on the incoming request,
+     * in client-preferred order. Empty when the client did not offer any.
+     *
+     * @return string[]
+     */
+    public function getOfferedSubprotocols(): array {}
+
+    /**
+     * Raw extension offers from Sec-WebSocket-Extensions, in
+     * client-preferred order.
+     *
+     * permessage-deflate (RFC 7692) is negotiated automatically when
+     * enabled via {@see HttpServerConfig::setWsPermessageDeflate()}; the
+     * remaining offers are informational. Empty when the client did not
+     * offer any.
+     *
+     * @return string[]
+     */
+    public function getOfferedExtensions(): array {}
+}
+
+/**
+ * One WebSocket connection.
+ *
+ * Created by the server immediately after the upgrade handshake commits
+ * and passed as the first argument to the handler registered via
+ * {@see HttpServer::addWebSocketHandler()}.
+ *
+ * Lifecycle: the connection is bound to the handler coroutine. When the
+ * handler returns — for any reason, including `return` from the recv
+ * loop on a null result — the server closes the connection with 1000
+ * Normal. Explicit close() before return is supported when a non-default
+ * code or reason is required.
+ *
+ * Concurrency model: send() / sendBinary() / ping() are safe to call
+ * from any coroutine on the same thread — a single cooperative flusher
+ * writes queued frames to the socket one at a time, so frames cannot
+ * interleave on the wire. recv() is single-reader: a second concurrent
+ * recv() throws {@see WebSocketConcurrentReadException}. close() is
+ * idempotent and can be called from any coroutine.
+ */
+final class WebSocket implements \Iterator
+{
+    /**
+     * Instances are constructed internally by the server.
+     */
+    private function __construct() {}
+
+    /**
+     * Receive the next text or binary message.
+     *
+     * Suspends the calling coroutine until a complete message arrives or
+     * the connection closes. Returns null when the peer closed cleanly —
+     * a normal CLOSE code (1000/1001/1005) or a plain disconnect with no
+     * CLOSE frame. Loops typically `while (($m = $ws->recv()) !== null)`.
+     *
+     * @return WebSocketMessage|null
+     * @throws WebSocketClosedException On a protocol error or an
+     *         explicit error close code; the exception's readonly
+     *         $closeCode / $closeReason carry the RFC 6455 code and
+     *         reason text.
+     * @throws WebSocketConcurrentReadException If another coroutine is
+     *         already blocked in recv() on this connection.
+     */
+    public function recv(): ?WebSocketMessage {}
+
+    /**
+     * Send a text frame.
+     *
+     * The data MUST be valid UTF-8 — invalid UTF-8 is rejected at the
+     * boundary. Returns immediately when the outbound queue is below the
+     * high-watermark. Suspends the calling coroutine when the queue is
+     * over the watermark and resumes once drain brings it back below.
+     *
+     * @param string $text Text payload, must be valid UTF-8
+     * @throws WebSocketBackpressureException On prolonged drain stall.
+     * @throws WebSocketClosedException If the connection is already
+     *         closed.
+     */
+    public function send(string $text): void {}
+
+    /**
+     * Send a binary frame. Binary payloads have no UTF-8 constraint.
+     *
+     * @param string $data Binary payload
+     * @see self::send() for backpressure semantics — they are identical.
+     */
+    public function sendBinary(string $data): void {}
+
+    /**
+     * Non-blocking send.
+     *
+     * Queues a text frame and returns true when the outbound queue is
+     * below the high-water mark; returns false WITHOUT queueing when it
+     * is at/over the mark. Never suspends the calling coroutine — the
+     * right tool for a broadcast loop where one slow client must not
+     * stall delivery to the others. The high-water mark is
+     * {@see HttpServerConfig::setStreamWriteBufferBytes()}.
+     *
+     * @param string $text Text payload, must be valid UTF-8
+     * @return bool True if accepted, false if backpressured (BUSY).
+     * @throws WebSocketClosedException If the connection is already
+     *         closed.
+     */
+    public function trySend(string $text): bool {}
+
+    /**
+     * Non-blocking binary send.
+     *
+     * @param string $data Binary payload
+     * @return bool True if accepted, false if backpressured (BUSY).
+     * @throws WebSocketClosedException If the connection is already
+     *         closed.
+     * @see self::trySend()
+     */
+    public function trySendBinary(string $data): bool {}
+
+    /**
+     * Send a PING frame.
+     *
+     * The peer is required by RFC 6455 §5.5.2 to reply with a PONG.
+     * Application code rarely needs to call this — the server's
+     * keepalive timer ({@see HttpServerConfig::setWsPingIntervalMs()})
+     * sends pings automatically when configured.
+     *
+     * @param string $payload Up to 125 bytes (RFC 6455 §5.5)
+     */
+    public function ping(string $payload = ''): void {}
+
+    /**
+     * Initiate the close handshake and tear the connection down.
+     *
+     * Idempotent — subsequent calls are no-ops.
+     *
+     * @param WebSocketCloseCode|int $code Standard code via the enum, or
+     *        a raw integer in 4000-4999 (application-specific codes per
+     *        RFC 6455 §7.4.2).
+     * @param string $reason UTF-8 reason text, up to 123 bytes.
+     */
+    public function close(WebSocketCloseCode|int $code = WebSocketCloseCode::NORMAL, string $reason = ''): void {}
+
+    /**
+     * True after close() has been called or the peer's CLOSE frame has
+     * been processed.
+     */
+    public function isClosed(): bool {}
+
+    /**
+     * The subprotocol negotiated during the upgrade, or null if none was
+     * selected.
+     */
+    public function getSubprotocol(): ?string {}
+
+    /**
+     * Peer address in `host:port` form (IPv4) or `[host]:port` (IPv6)
+     * for TCP listeners. Empty string for Unix-socket listeners.
+     */
+    public function getRemoteAddress(): string {}
+
+    /**
+     * @see self::recv() — iteration mirrors a recv() loop. The cursor
+     * advances by pulling the next message; iteration ends on a graceful
+     * close and throws WebSocketClosedException on an error close.
+     */
+    public function current(): ?WebSocketMessage {}
+
+    public function key(): int {}
+
+    public function next(): void {}
+
+    public function rewind(): void {}
+
+    public function valid(): bool {}
 }
 
 // ---------------------------------------------------------------------------

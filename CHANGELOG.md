@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.4
+
+Synced `TrueAsync\*` with the server extension's WebSocket API (v0.9.0):
+
+- Added `HttpServer::addWebSocketHandler()` — full documentation of the two supported handler signatures (with and without `WebSocketUpgrade`).
+- Added `WebSocket`, `WebSocketMessage`, `WebSocketUpgrade` and the `WebSocketCloseCode` enum.
+- Added the WebSocket exception hierarchy: `WebSocketException`, `WebSocketClosedException`, `WebSocketBackpressureException`, `WebSocketConcurrentReadException`.
+- Added the `HttpServerConfig` WebSocket knobs: `setWsMaxMessageSize()`, `setWsMaxFrameSize()`, `setWsPingIntervalMs()`, `setWsPongTimeoutMs()`, `setWsPermessageDeflate()` (and their getters).
+
 ## 0.7.3
 
 Synced `TrueAsync\HttpResponse` with the server extension's Server-Sent Events API:
