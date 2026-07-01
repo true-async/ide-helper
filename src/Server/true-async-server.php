@@ -14,6 +14,7 @@
  * @since      8.6
  * @version    0.9.0
  * @link       https://github.com/true-async/server
+ * @link       https://true-async.github.io/en/docs/server/index.html
  */
 
 declare(strict_types=1);
@@ -26,6 +27,8 @@ namespace TrueAsync {
 
 /**
  * Base exception for all HTTP server errors.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 class HttpServerException extends \Exception
 {
@@ -33,6 +36,8 @@ class HttpServerException extends \Exception
 
 /**
  * Runtime errors during server operation.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerRuntimeException extends HttpServerException
 {
@@ -40,6 +45,8 @@ final class HttpServerRuntimeException extends HttpServerException
 
 /**
  * Invalid argument passed to server methods.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerInvalidArgumentException extends HttpServerException
 {
@@ -47,6 +54,8 @@ final class HttpServerInvalidArgumentException extends HttpServerException
 
 /**
  * Connection-related errors (socket, network).
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerConnectionException extends HttpServerException
 {
@@ -54,6 +63,8 @@ final class HttpServerConnectionException extends HttpServerException
 
 /**
  * Protocol-level errors (malformed HTTP, invalid headers).
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerProtocolException extends HttpServerException
 {
@@ -61,6 +72,8 @@ final class HttpServerProtocolException extends HttpServerException
 
 /**
  * Timeout errors (read, write, keep-alive).
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerTimeoutException extends HttpServerException
 {
@@ -79,6 +92,8 @@ final class HttpServerTimeoutException extends HttpServerException
  *
  * NOT marked final — user code may extend it for richer typing
  * (NotFoundException extends HttpException etc).
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 class HttpException extends \Async\AsyncCancellation
 {
@@ -101,6 +116,8 @@ class HttpException extends \Async\AsyncCancellation
  *
  * TRACE / FATAL are intentionally absent — TRACE is unused, FATAL is
  * delivered via zend_error_noreturn(E_ERROR) which already terminates.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/log-severity.html
  */
 enum LogSeverity: int
 {
@@ -113,6 +130,8 @@ enum LogSeverity: int
 
 /**
  * Content-Disposition for HttpResponse::sendFile().
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
  */
 enum SendFileDisposition: string
 {
@@ -130,6 +149,8 @@ enum SendFileDisposition: string
  *                      dispatcher, which spawns the regular handler
  *                      coroutine — the request is delivered to
  *                      {@see HttpServer::addHttpHandler()}.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticOnMissing: int
 {
@@ -147,6 +168,8 @@ enum StaticOnMissing: int
  * ALLOW:            dotfiles are served like any other file.
  * IGNORE:           treat as if the file does not exist (passthrough
  *                   per {@see StaticOnMissing}).
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticDotfiles: int
 {
@@ -166,6 +189,8 @@ enum StaticDotfiles: int
  *                        configured root directory.
  * OWNER_MATCH:           follow only if the symlink and its final
  *                        target are owned by the same uid.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticSymlinks: int
 {
@@ -180,6 +205,8 @@ enum StaticSymlinks: int
 
 /**
  * Options for HttpResponse::sendFile(). Value object, immutable.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
  */
 final readonly class SendFileOptions
 {
@@ -200,6 +227,8 @@ final readonly class SendFileOptions
 
 /**
  * Represents an uploaded file (PSR-7 compatible).
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/uploaded-file.html
  */
 final class UploadedFile
 {
@@ -283,6 +312,8 @@ final class UploadedFile
  * / Apache emit when a directory URL is missing the trailing slash;
  * call `setIndexFiles([])` / `disableIndex()` if your deployment relies
  * on a real catch-all on directory paths.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 final class StaticHandler
 {
@@ -454,6 +485,9 @@ final class StaticHandler
 
 /**
  * HTTP Server configuration.
+ *
+ * @link https://true-async.github.io/en/docs/server/configuration.html
+ * @link https://true-async.github.io/en/docs/reference/server/http-server-config.html
  */
 final class HttpServerConfig
 {
@@ -1347,6 +1381,9 @@ final class HttpServerConfig
 
 /**
  * HTTP Server.
+ *
+ * @link https://true-async.github.io/en/docs/server/quickstart.html
+ * @link https://true-async.github.io/en/docs/reference/server/http-server.html
  */
 final class HttpServer
 {
@@ -1483,6 +1520,8 @@ final class HttpServer
  *
  * Instances are created internally by the server and passed to the
  * registered handler — never constructed from user code.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/http-request.html
  */
 final class HttpRequest
 {
@@ -1678,6 +1717,9 @@ final class HttpRequest
  *
  * Instances are created internally by the server and passed to the
  * registered handler — never constructed from user code.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/http-response.html
+ * @link https://true-async.github.io/en/docs/server/sse.html SSE guide
  */
 final class HttpResponse
 {
@@ -2091,6 +2133,8 @@ final class HttpResponse
  *
  * Application-specific codes (4000-4999, RFC 6455 §7.4.2) stay open via
  * {@see WebSocket::close()} accepting `int` alongside this enum.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 enum WebSocketCloseCode: int
 {
@@ -2113,6 +2157,8 @@ enum WebSocketCloseCode: int
  *
  * Extends the project-wide {@see HttpServerException}, so existing
  * catch-all handlers keep working.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 class WebSocketException extends HttpServerException
 {
@@ -2127,6 +2173,8 @@ class WebSocketException extends HttpServerException
  * text from the peer's CLOSE payload, or empty when none was provided.
  * Graceful close (peer-initiated CLOSE 1000) is signalled by
  * {@see WebSocket::recv()} returning null instead of throwing.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketClosedException extends WebSocketException
 {
@@ -2141,6 +2189,8 @@ final class WebSocketClosedException extends WebSocketException
  *
  * Catching this is the application's signal to either close the
  * connection (slow consumer detected) or drop the message and continue.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketBackpressureException extends WebSocketException
 {
@@ -2153,6 +2203,8 @@ final class WebSocketBackpressureException extends WebSocketException
  * There is no defined semantics for multiple readers on a single byte
  * stream, so this is rejected at the boundary instead of producing
  * race-prone behavior. Restructure to a single recv loop that dispatches.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketConcurrentReadException extends WebSocketException
 {
@@ -2164,6 +2216,8 @@ final class WebSocketConcurrentReadException extends WebSocketException
  *
  * Text messages have already been UTF-8 validated by the framing layer —
  * receivers can use `$data` as-is without re-checking.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketMessage
 {
@@ -2203,6 +2257,8 @@ final class WebSocketMessage
  * settings. Once the handshake commits, calls on this object throw —
  * subprotocol can no longer change once Sec-WebSocket-Protocol has been
  * written to the wire.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketUpgrade
 {
@@ -2273,6 +2329,9 @@ final class WebSocketUpgrade
  * interleave on the wire. recv() is single-reader: a second concurrent
  * recv() throws {@see WebSocketConcurrentReadException}. close() is
  * idempotent and can be called from any coroutine.
+ *
+ * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ * @link https://true-async.github.io/en/docs/server/websocket.html WebSocket guide
  */
 final class WebSocket implements \Iterator
 {
