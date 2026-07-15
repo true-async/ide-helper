@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.0
+
+Completed the `TrueAsync\*` HTTP-server sync. 0.7.4 brought over the WebSocket
+classes and the per-class `@link` tags; this release covers the rest of the
+extension's public surface and verifies the file against the live extension by
+reflection, so it now matches the whole public class / enum / function set. The
+`@link` tags from 0.7.4 are kept on every class.
+
+New since 0.7.4:
+
+- **WebSocket topics** — cross-worker pub/sub on `WebSocket`: `subscribe()`,
+  `unsubscribe()`, `getTopics()`, `publish()`, `publishBinary()`,
+  `subscriberCount()`, plus `getRemoteAddress()` / `getRemotePort()`. And the
+  `HttpServerConfig` topic knobs: `setWsMaxSubscriptions()`,
+  `setWsPublishRateLimit()`.
+- **Observability** — `HttpServer::getStats()`, `getRuntimeStats()`, `reload()`,
+  `isHttp2()`, `isHttp3()`; plus the `HttpServerConfig` setters for hot reload
+  (`enableHotReload()`, `enableReloadOnSignal()`), cross-worker stats
+  (`setStatsEnabled()`), multi-sink logging (`setLogSinks()`), HTTP/3 pacing and
+  buffers, request scope, TLS buffer and the hq docroot.
+- **gRPC** — `HttpRequest::readMessage()` / `getGrpcTimeout()`,
+  `HttpResponse::setGrpcEncoding()` / `writeMessage()`.
+
+Also corrected two stale docblocks: `WebSocket::publish()` throws
+`WebSocketBackpressureException` over the publish rate limit and `subscribe()`
+throws over the subscription cap; and the `WebSocketUpgrade` three-arg handler is
+selected by PHP dropping undeclared args, not by Reflection.
+
 ## 0.7.4
 
 Synced `TrueAsync\*` with the server extension's WebSocket API (v0.9.0):

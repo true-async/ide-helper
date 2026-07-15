@@ -12,7 +12,7 @@
  * and functions the extension registers.
  *
  * @since      8.6
- * @version    0.9.0
+ * @version    0.11.0
  * @link       https://github.com/true-async/server
  * @link       https://true-async.github.io/en/docs/server/index.html
  */
@@ -27,8 +27,8 @@ namespace TrueAsync {
 
 /**
  * Base exception for all HTTP server errors.
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 class HttpServerException extends \Exception
 {
@@ -36,8 +36,8 @@ class HttpServerException extends \Exception
 
 /**
  * Runtime errors during server operation.
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerRuntimeException extends HttpServerException
 {
@@ -45,8 +45,8 @@ final class HttpServerRuntimeException extends HttpServerException
 
 /**
  * Invalid argument passed to server methods.
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerInvalidArgumentException extends HttpServerException
 {
@@ -54,8 +54,8 @@ final class HttpServerInvalidArgumentException extends HttpServerException
 
 /**
  * Connection-related errors (socket, network).
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerConnectionException extends HttpServerException
 {
@@ -63,8 +63,8 @@ final class HttpServerConnectionException extends HttpServerException
 
 /**
  * Protocol-level errors (malformed HTTP, invalid headers).
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerProtocolException extends HttpServerException
 {
@@ -72,8 +72,8 @@ final class HttpServerProtocolException extends HttpServerException
 
 /**
  * Timeout errors (read, write, keep-alive).
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerTimeoutException extends HttpServerException
 {
@@ -92,10 +92,68 @@ final class HttpServerTimeoutException extends HttpServerException
  *
  * NOT marked final — user code may extend it for richer typing
  * (NotFoundException extends HttpException etc).
- *
- * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 class HttpException extends \Async\AsyncCancellation
+{
+}
+
+/**
+ * Base class for every WebSocket error. Extends HttpServerException, so a
+ * catch-all that already handles server errors keeps working unchanged.
+ *
+ * Also raised directly by {@see WebSocket::subscribe()} on a malformed topic
+ * filter or once the connection is at its
+ * {@see HttpServerConfig::setWsMaxSubscriptions()} limit, and by
+ * {@see WebSocket::publish()} on a malformed topic or one carrying a wildcard.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ */
+class WebSocketException extends HttpServerException
+{
+}
+
+/**
+ * The connection closed for a reason other than a normal peer handshake.
+ * $closeCode is the RFC 6455 code (1006 Abnormal Closure when the peer left
+ * without a CLOSE frame) and $closeReason the peer's UTF-8 reason text.
+ *
+ * A graceful peer close is NOT an exception: {@see WebSocket::recv()} returns
+ * null instead.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ */
+final class WebSocketClosedException extends WebSocketException
+{
+    public readonly int $closeCode;
+    public readonly string $closeReason;
+}
+
+/**
+ * Backpressure. Raised by {@see WebSocket::send()} / {@see WebSocket::sendBinary()}
+ * when the outbound queue stays over the high-watermark for longer than the
+ * write timeout — a slow consumer — and by {@see WebSocket::publish()} when the
+ * connection is over its {@see HttpServerConfig::setWsPublishRateLimit()}.
+ *
+ * Either way the connection stays up: catching this is the application's cue to
+ * drop the message, back off, or close.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ */
+final class WebSocketBackpressureException extends WebSocketException
+{
+}
+
+/**
+ * Programmer error: a second coroutine called {@see WebSocket::recv()} while
+ * another was already suspended in recv() on the same connection. A single byte
+ * stream has no defined semantics for multiple readers, so this is rejected at
+ * the boundary rather than raced. Restructure to one recv loop that dispatches.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ */
+final class WebSocketConcurrentReadException extends WebSocketException
 {
 }
 
@@ -116,8 +174,8 @@ class HttpException extends \Async\AsyncCancellation
  *
  * TRACE / FATAL are intentionally absent — TRACE is unused, FATAL is
  * delivered via zend_error_noreturn(E_ERROR) which already terminates.
- *
- * @link https://true-async.github.io/en/docs/reference/server/log-severity.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/log-severity.html
  */
 enum LogSeverity: int
 {
@@ -130,8 +188,8 @@ enum LogSeverity: int
 
 /**
  * Content-Disposition for HttpResponse::sendFile().
- *
- * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
  */
 enum SendFileDisposition: string
 {
@@ -149,8 +207,8 @@ enum SendFileDisposition: string
  *                      dispatcher, which spawns the regular handler
  *                      coroutine — the request is delivered to
  *                      {@see HttpServer::addHttpHandler()}.
- *
- * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticOnMissing: int
 {
@@ -168,8 +226,8 @@ enum StaticOnMissing: int
  * ALLOW:            dotfiles are served like any other file.
  * IGNORE:           treat as if the file does not exist (passthrough
  *                   per {@see StaticOnMissing}).
- *
- * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticDotfiles: int
 {
@@ -189,8 +247,8 @@ enum StaticDotfiles: int
  *                        configured root directory.
  * OWNER_MATCH:           follow only if the symlink and its final
  *                        target are owned by the same uid.
- *
- * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticSymlinks: int
 {
@@ -199,14 +257,42 @@ enum StaticSymlinks: int
     case OWNER_MATCH = 2;
 }
 
+/**
+ * The IANA close-code registry (RFC 6455 §7.4.1), as accepted by
+ * {@see WebSocket::close()}.
+ *
+ * Application-specific codes stay reachable because close() also accepts a raw
+ * `int` — RFC 6455 §7.4.2 reserves 4000-4999 for exactly that.
+ *
+ * NO_STATUS, ABNORMAL_CLOSURE and TLS_HANDSHAKE are reserved: they describe
+ * what happened, but MUST NOT be sent on the wire.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ */
+enum WebSocketCloseCode: int
+{
+    case NORMAL                = 1000;  /* normal closure */
+    case GOING_AWAY            = 1001;  /* server going down / client navigating away */
+    case PROTOCOL_ERROR        = 1002;  /* protocol error */
+    case UNSUPPORTED_DATA      = 1003;  /* received data of an unsupported type */
+    case NO_STATUS             = 1005;  /* RESERVED — no code in the close frame */
+    case ABNORMAL_CLOSURE      = 1006;  /* RESERVED — closed with no close frame */
+    case INVALID_FRAME_PAYLOAD = 1007;  /* non-UTF-8 payload in a text message */
+    case POLICY_VIOLATION      = 1008;  /* policy violation */
+    case MESSAGE_TOO_BIG       = 1009;  /* message too large to process */
+    case MANDATORY_EXTENSION   = 1010;  /* an expected extension was not negotiated */
+    case INTERNAL_SERVER_ERROR = 1011;  /* unexpected server error */
+    case TLS_HANDSHAKE         = 1015;  /* RESERVED — TLS handshake failure */
+}
+
 // ---------------------------------------------------------------------------
 // Value objects
 // ---------------------------------------------------------------------------
 
 /**
  * Options for HttpResponse::sendFile(). Value object, immutable.
- *
- * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
  */
 final readonly class SendFileOptions
 {
@@ -227,8 +313,8 @@ final readonly class SendFileOptions
 
 /**
  * Represents an uploaded file (PSR-7 compatible).
- *
- * @link https://true-async.github.io/en/docs/reference/server/uploaded-file.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/uploaded-file.html
  */
 final class UploadedFile
 {
@@ -312,8 +398,8 @@ final class UploadedFile
  * / Apache emit when a directory URL is missing the trailing slash;
  * call `setIndexFiles([])` / `disableIndex()` if your deployment relies
  * on a real catch-all on directory paths.
- *
- * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 final class StaticHandler
 {
@@ -485,9 +571,9 @@ final class StaticHandler
 
 /**
  * HTTP Server configuration.
- *
- * @link https://true-async.github.io/en/docs/server/configuration.html
- * @link https://true-async.github.io/en/docs/reference/server/http-server-config.html
+  *
+  * @link https://true-async.github.io/en/docs/server/configuration.html
+  * @link https://true-async.github.io/en/docs/reference/server/http-server-config.html
  */
 final class HttpServerConfig
 {
@@ -620,6 +706,41 @@ final class HttpServerConfig
      * Returns the bootloader previously set, or null.
      */
     public function getBootloader(): ?\Closure {}
+
+    /**
+     * Hot-reload on file change — the development trigger. Pool mode only
+     * ({@see setWorkers()} > 1).
+     *
+     * The pool parent watches each path recursively. A settled burst of changes
+     * invalidates the watched trees in opcache and calls
+     * {@see HttpServer::reload()}, so replacement workers re-run the bootloader
+     * with the new code while the listen sockets stay open — no dropped
+     * connection, no restart.
+     *
+     * @param string[] $watchPaths Directories to watch, recursively.
+     * @param string[] $extensions Case-insensitive allow-list; empty = every file.
+     * @param int $debounceMs Quiet window before a burst fires one reload.
+     * @param int $maxHoldMs Reload at most this long after the first change
+     *                       (0 = no cap), so a directory that never goes quiet
+     *                       still reloads.
+     * @return static
+     */
+    public function enableHotReload(
+        array $watchPaths,
+        array $extensions = ['php'],
+        int $debounceMs = 300,
+        int $maxHoldMs = 2000
+    ): static {}
+
+    /**
+     * Hot-reload on SIGHUP — the production trigger. Pool mode only: the pool
+     * parent arms a persistent SIGHUP handler that calls
+     * {@see HttpServer::reload()}, which is the signal a deploy script sends
+     * once the new code is on disk. Not supported on Windows.
+     *
+     * @return static
+     */
+    public function enableReloadOnSignal(bool $enabled = true): static {}
 
     /**
      * Get socket backlog.
@@ -869,6 +990,123 @@ final class HttpServerConfig
     /** @return int */
     public function getMaxBodySize(): int {}
 
+    // === WebSocket knobs ===
+
+    /**
+     * Cap on a reassembled WebSocket message. A peer whose fragments add up to
+     * more than this gets a CLOSE 1009 (Message Too Big) and the connection is
+     * torn down.
+     *
+     * Default: 1048576 (1 MiB). Valid: 128 .. 268435456 (256 MiB).
+     *
+     * @return static
+     */
+    public function setWsMaxMessageSize(int $bytes): static {}
+
+    /** @return int */
+    public function getWsMaxMessageSize(): int {}
+
+    /**
+     * Cap on a single frame's payload. Separate from the message cap because it
+     * is the fragment-flood defence: a peer that never exceeds the message size
+     * can still exhaust a worker with millions of tiny fragments.
+     *
+     * Default: 1048576 (1 MiB). Same valid range as setWsMaxMessageSize().
+     *
+     * @return static
+     */
+    public function setWsMaxFrameSize(int $bytes): static {}
+
+    /** @return int */
+    public function getWsMaxFrameSize(): int {}
+
+    /**
+     * How many distinct topic filters one connection may hold.
+     *
+     * Default 0 — unlimited, which is what every self-hosted broker ships
+     * (EMQX `max_subscriptions`, NATS `max_subs`): only the application knows
+     * how many topics it needs.
+     *
+     * Set it whenever client input reaches {@see WebSocket::subscribe()} — say
+     * `$ws->subscribe($msg->data)` — so a peer cannot grow the worker's topic
+     * tree without end. Over the cap, subscribe() throws
+     * {@see WebSocketException} and the connection stays up.
+     *
+     * Filter depth is capped separately and unconditionally, at 128 levels.
+     *
+     * @return static
+     */
+    public function setWsMaxSubscriptions(int $count): static {}
+
+    /** @return int */
+    public function getWsMaxSubscriptions(): int {}
+
+    /**
+     * Token bucket over {@see WebSocket::publish()}, per connection. Default 0 —
+     * off, as EMQX ships its `messages_rate`.
+     *
+     * publish() is the one WebSocket call an unprivileged peer can turn into
+     * work on *every* worker in the process — send() and trySend() only ever
+     * touch its own socket. Unmetered, one client looping on a relayed message
+     * fills every worker's inbox, and the drops that follow take out other
+     * topics' traffic too.
+     *
+     * Over the rate publish() throws {@see WebSocketBackpressureException} and
+     * the connection stays up — the sender is told, rather than the message
+     * vanishing into a full mailbox where nobody can see it.
+     *
+     * @param int $perSecond Sustained publishes per second.
+     * @param int $burst Bucket depth in messages — how far a handler may run
+     *                   ahead of the rate. 0 = one second's worth.
+     * @return static
+     */
+    public function setWsPublishRateLimit(int $perSecond, int $burst = 0): static {}
+
+    /** @return int */
+    public function getWsPublishRateLimit(): int {}
+
+    /** @return int */
+    public function getWsPublishBurst(): int {}
+
+    /**
+     * Server-initiated PING cadence (ms) on otherwise-idle connections. The peer
+     * must answer with a PONG within {@see setWsPongTimeoutMs()} or the
+     * connection is torn down with 1001 (Going Away).
+     *
+     * Default: 30000. 0 disables automatic ping.
+     *
+     * @return static
+     */
+    public function setWsPingIntervalMs(int $ms): static {}
+
+    /** @return int */
+    public function getWsPingIntervalMs(): int {}
+
+    /**
+     * How long the server waits for a PONG before declaring the connection dead.
+     *
+     * Default: 60000. 0 disables the timeout.
+     *
+     * @return static
+     */
+    public function setWsPongTimeoutMs(int $ms): static {}
+
+    /** @return int */
+    public function getWsPongTimeoutMs(): int {}
+
+    /**
+     * Enable permessage-deflate (RFC 7692). Off by default: it costs CPU and
+     * widens the decompression-bomb surface, so it is opt-in. Negotiated only
+     * when the client offers it, and the message cap is enforced both before and
+     * after inflate. Requires a build with zlib (HTTP compression).
+     *
+     * @return static
+     */
+    public function setWsPermessageDeflate(bool $enabled): static {}
+
+    /** @return bool */
+    public function getWsPermessageDeflate(): bool {}
+
     // === HTTP/3 production knobs ===
 
     /**
@@ -937,6 +1175,49 @@ final class HttpServerConfig
     public function getHttp3PeerConnectionBudget(): int {}
 
     /**
+     * Inbound command-mailbox depth per reactor (reactor pool / HTTP/3).
+     * 0 = engine default. Valid: 0, or 64 .. 1048576.
+     *
+     * @param int $slots
+     * @return static
+     */
+    public function setReactorMailboxCapacity(int $slots): static {}
+
+    /** @return int */
+    public function getReactorMailboxCapacity(): int {}
+
+    /**
+     * UDP socket receive/send buffer (bytes) on HTTP/3 listeners. Absorbs
+     * inbound bursts so they do not overflow into RcvbufErrors. 0 leaves the OS
+     * default. The kernel clamps to net.core.{r,w}mem_max unless privileged.
+     *
+     * Default: 8 MiB. Valid: 0 .. 268435456 (256 MiB).
+     *
+     * @param int $bytes
+     * @return static
+     */
+    public function setHttp3SocketBufferBytes(int $bytes): static {}
+
+    /** @return int */
+    public function getHttp3SocketBufferBytes(): int {}
+
+    /**
+     * Opt-in QUIC send pacing. Caps each burst at the congestion controller's
+     * send_quantum and spaces packets on ngtcp2's pacing timer, which smooths
+     * bulk sends over lossy or rate-limited paths.
+     *
+     * Default OFF: on a lossless path pacing only adds cost, so turn it on for
+     * constrained-path deployments and nothing else.
+     *
+     * @param bool $enable
+     * @return static
+     */
+    public function setHttp3Pacing(bool $enable): static {}
+
+    /** @return bool */
+    public function isHttp3Pacing(): bool {}
+
+    /**
      * Toggle the RFC 7838 `Alt-Svc: h3=":<port>"; ma=86400` header
      * advertisement on H1/H2 responses when an H3 listener is up.
      * Default true. Disable during phased H3 rollout.
@@ -951,6 +1232,35 @@ final class HttpServerConfig
 
     /** @return bool */
     public function isHttp3AltSvcEnabled(): bool {}
+
+    // === Request scope / statistics ===
+
+    /**
+     * Per-request child scope, on by default. Turning it off reuses the
+     * connection scope directly — two fewer allocations per request, at the
+     * price of `Async\request_context()` returning null (reach for `?->`).
+     *
+     * @param bool $enable
+     * @return static
+     */
+    public function setRequestScope(bool $enable): static {}
+
+    /** @return bool */
+    public function isRequestScope(): bool {}
+
+    /**
+     * Opt into the cross-worker statistics aggregate read by
+     * {@see HttpServer::getStats()}, which throws while this is off. With it off
+     * no stats slab is allocated at all. Distinct from trace-context telemetry
+     * ({@see setTelemetryEnabled()}). Fixed at server start.
+     *
+     * @param bool $enabled
+     * @return static
+     */
+    public function setStatsEnabled(bool $enabled): static {}
+
+    /** @return bool */
+    public function isStatsEnabled(): bool {}
 
     // === HTTP body compression ===
 
@@ -1152,94 +1462,6 @@ final class HttpServerConfig
      */
     public function isProtocolDetectionEnabled(): bool {}
 
-    // === WebSocket ===
-
-    /**
-     * Maximum reassembled WebSocket message size in bytes.
-     *
-     * Frames whose combined payload exceeds this trigger an RFC 6455
-     * §7.4.1 "Message Too Big" close (1009) and connection teardown.
-     * Default 1048576 (1 MiB). Valid range: 128..268435456 (256 MiB).
-     *
-     * @param int $bytes Maximum message size in bytes
-     * @return static
-     */
-    public function setWsMaxMessageSize(int $bytes): static {}
-
-    /**
-     * Get maximum reassembled WebSocket message size in bytes.
-     */
-    public function getWsMaxMessageSize(): int {}
-
-    /**
-     * Maximum per-frame WebSocket payload size in bytes.
-     *
-     * Defends against fragment-flood attacks where a peer sends millions
-     * of tiny fragments. Default 1048576 (1 MiB). Same valid range as
-     * {@see self::setWsMaxMessageSize()}.
-     *
-     * @param int $bytes Maximum frame size in bytes
-     * @return static
-     */
-    public function setWsMaxFrameSize(int $bytes): static {}
-
-    /**
-     * Get maximum per-frame WebSocket payload size in bytes.
-     */
-    public function getWsMaxFrameSize(): int {}
-
-    /**
-     * Server-initiated WebSocket PING cadence in milliseconds.
-     *
-     * The server sends a PING this often on otherwise-idle connections;
-     * the peer must reply with PONG within {@see self::setWsPongTimeoutMs()}
-     * or the connection is torn down with code 1001 (GoingAway).
-     * Default 30000 (30s). 0 disables automatic ping.
-     *
-     * @param int $ms Ping interval in milliseconds
-     * @return static
-     */
-    public function setWsPingIntervalMs(int $ms): static {}
-
-    /**
-     * Get server-initiated WebSocket PING cadence in milliseconds.
-     */
-    public function getWsPingIntervalMs(): int {}
-
-    /**
-     * WebSocket PONG deadline in milliseconds.
-     *
-     * How long the server waits after a PING before declaring the
-     * connection dead. Default 60000 (60s). 0 disables the timeout.
-     *
-     * @param int $ms Pong deadline in milliseconds
-     * @return static
-     */
-    public function setWsPongTimeoutMs(int $ms): static {}
-
-    /**
-     * Get WebSocket PONG deadline in milliseconds.
-     */
-    public function getWsPongTimeoutMs(): int {}
-
-    /**
-     * Enable RFC 7692 permessage-deflate (per-message WebSocket compression).
-     *
-     * Off by default — opt-in because it costs CPU and widens the
-     * decompression-bomb surface. Negotiated only when the client offers
-     * it; the reassembled-message cap is enforced before and after
-     * inflate. Requires the build to include zlib.
-     *
-     * @param bool $enabled Enable permessage-deflate
-     * @return static
-     */
-    public function setWsPermessageDeflate(bool $enabled): static {}
-
-    /**
-     * Check if RFC 7692 permessage-deflate is enabled.
-     */
-    public function getWsPermessageDeflate(): bool {}
-
     // === TLS configuration ===
 
     /**
@@ -1280,6 +1502,37 @@ final class HttpServerConfig
      * Get private key path.
      */
     public function getPrivateKey(): ?string {}
+
+    /**
+     * Ciphertext-out ring — how much OpenSSL stages per SSL_write before the
+     * emit path parks the tail. Larger means fewer syscalls on bodies bigger
+     * than one TLS record, at roughly $bytes more memory per TLS connection;
+     * smaller saves that memory with no RPS cost when responses are small.
+     *
+     * The value is rounded UP to whole TLS records (~17 KiB), floored at one and
+     * capped at 16. 0 resets to the 64 KiB default. The getter reports the
+     * effective, record-rounded size — not what you passed in.
+     *
+     * @param int $bytes
+     * @return static
+     */
+    public function setTlsBufferBytes(int $bytes): static {}
+
+    /** @return int Effective (record-rounded) ciphertext-out ring size. */
+    public function getTlsBufferBytes(): int {}
+
+    /**
+     * Document root for hq-interop (HTTP/0.9-over-QUIC), which is what the QUIC
+     * interop test matrix speaks. Files below it are served verbatim to hq
+     * clients. No effect on h3.
+     *
+     * @param string $path
+     * @return static
+     */
+    public function setHttp3HqDocroot(string $path): static {}
+
+    /** @return string|null */
+    public function getHttp3HqDocroot(): ?string {}
 
     // === Body handling ===
 
@@ -1336,6 +1589,55 @@ final class HttpServerConfig
     public function getLogStream(): mixed {}
 
     /**
+     * Fan every log record out to several destinations at once, each with its
+     * own format and severity floor — a JSON access log to a file and a coloured
+     * diagnostics console, side by side. Supersedes the
+     * setLogSeverity()/setLogStream() single-stream sugar. At most 8 sinks;
+     * a bad spec throws here, at call time, not at start().
+     *
+     * Each element is an array:
+     *   - 'type'     => 'stream' | 'file' | 'stdout' | 'stderr' | 'syslog'   (required)
+     *   - 'stream'   => resource        (required for 'stream')
+     *   - 'path'     => string          (required for 'file')
+     *   - 'target'   => 'tcp://host:port' | 'udp://host:port' | 'udg:///dev/log'
+     *                                   (required for 'syslog')
+     *   - 'facility' => 'user' | 'daemon' | 'local0'..'local7'  (syslog, default 'user')
+     *   - 'format'   => 'plain' | 'logfmt' | 'json' | 'pretty' | 'template'
+     *                                   (default 'plain'; ignored by syslog)
+     *   - 'template' => string          (required for format 'template')
+     *   - 'category' => 'app' | 'access' | 'all'   (default 'app')
+     *   - 'level'    => LogSeverity     (required)
+     *
+     * Under a worker pool use 'file', not 'stream': each worker reopens the path
+     * itself, whereas a parent-opened PHP resource cannot cross into a worker
+     * thread (it is skipped there, with a notice at start).
+     *
+     * 'category' routes record kinds: 'app' is server diagnostics, 'access' is
+     * exactly one structured record per completed request — OpenTelemetry HTTP
+     * semconv attributes (http.request.method, url.path, url.query,
+     * http.response.status_code, network.protocol.version,
+     * http.response.body.size, http.server.request.duration, client.address,
+     * client.port, plus trace context) — and 'all' is both.
+     *
+     * 'json' emits one OTel-Logs object per line; 'pretty' decides colour from
+     * the target fd, honouring NO_COLOR / CLICOLOR_FORCE; 'syslog' emits RFC
+     * 5424, octet-framed (RFC 6587) over TCP and one record per datagram on
+     * udp/udg; 'template' renders a custom line — {ts} or {ts:PATTERN} with a
+     * date()-style subset (Y y m d H i s v), {level}, {msg}, {attrs}, {trace},
+     * {span}, everything else literal.
+     *
+     * No sink calls back into PHP, by design: records are emitted from IO
+     * callbacks and from reactor threads that have no PHP context, so the log
+     * path must never re-enter the VM. To export logs from userland, point a
+     * sink at a file or socket with 'format' => 'json' and drain it from your own
+     * coroutine — which also keeps exporter latency off the request path.
+     *
+     * @param array $sinks List of sink specs (see above).
+     * @return static
+     */
+    public function setLogSinks(array $sinks): static {}
+
+    /**
      * Enable or disable telemetry. When enabled, the server parses
      * incoming traceparent / tracestate headers (W3C Trace Context) and
      * attaches them to the request — accessible via HttpRequest API.
@@ -1381,9 +1683,9 @@ final class HttpServerConfig
 
 /**
  * HTTP Server.
- *
- * @link https://true-async.github.io/en/docs/server/quickstart.html
- * @link https://true-async.github.io/en/docs/reference/server/http-server.html
+  *
+  * @link https://true-async.github.io/en/docs/server/quickstart.html
+  * @link https://true-async.github.io/en/docs/reference/server/http-server.html
  */
 final class HttpServer
 {
@@ -1419,18 +1721,29 @@ final class HttpServer
     public function addStaticHandler(StaticHandler $handler): static {}
 
     /**
-     * Add WebSocket handler for full-duplex connections (RFC 6455).
+     * Add the WebSocket handler. Registering it is what turns WebSocket on —
+     * there is no separate switch to flip. (Note that
+     * {@see HttpServerConfig::enableWebSocket()} is an unimplemented stub that
+     * throws; do not call it.)
      *
-     * Upgrade is accepted from HTTP/1.1 and from HTTP/2 (RFC 8441 Extended
-     * CONNECT), plus wss:// over TLS and permessage-deflate (RFC 7692). Each
-     * connection is served by its own coroutine.
+     * An HTTP handler is still required: start() refuses to come up without one,
+     * and it is what answers the requests that are not upgrades.
      *
-     * Two handler signatures are supported, detected by the declared
-     * parameter count: `function(WebSocket $ws): void` accepts every
-     * upgrade with default settings; `function(WebSocket $ws, HttpRequest
-     * $request, WebSocketUpgrade $upgrade): void` additionally gives access
-     * to subprotocol negotiation and the ability to reject the upgrade
-     * before the 101 response is sent.
+     * The handler is invoked with three arguments and PHP drops the ones you did
+     * not declare, so every arity works:
+     *
+     *   function (WebSocket $ws): void
+     *   function (WebSocket $ws, HttpRequest $req): void
+     *   function (WebSocket $ws, HttpRequest $req, WebSocketUpgrade $u): void
+     *
+     * Declare the third parameter when you need to pick a subprotocol or reject
+     * the upgrade (auth) before the 101 goes out — see {@see WebSocketUpgrade}.
+     *
+     * It runs in its own coroutine for the life of the connection, and the server
+     * closes with 1000 Normal once it returns. A handler that throws does not
+     * take the worker down: the exception is logged, and the peer is told
+     * in-protocol — an HTTP status if the throw beat the upgrade, a CLOSE 1011
+     * once the session was live.
      *
      * @param callable $handler WebSocket handler callback
      * @return static
@@ -1468,14 +1781,54 @@ final class HttpServer
      * Stops accepting new connections, waits for active requests to complete
      * (up to shutdown timeout), then closes all connections.
      *
+     * On a pool parent ({@see HttpServerConfig::setWorkers()} > 1) it retires the
+     * whole cohort and SUSPENDS until the server is really down — when it
+     * returns, the workers have drained, the pool is torn down and the listen
+     * sockets are closed. Call it from a coroutine; a `Async\signal(SIGTERM)`
+     * handler is the usual place.
+     *
+     * A standalone server's stop() does not suspend: it is normally called from
+     * a request handler, and the shutdown drain waits on that very handler — so
+     * a blocking stop() there would be waiting for itself.
+     *
      * @return bool True if stopped successfully
      */
     public function stop(): bool {}
 
     /**
+     * Hot-reload the worker pool. Pool parent only.
+     *
+     * Workers finish what they are holding, stop and exit; fresh worker threads
+     * re-run the bootloader — picking up the changed code — and take over on the
+     * same listen sockets, so no connection is refused across the swap. Suspends
+     * until the old cohort has drained; start() keeps running throughout.
+     *
+     * Invalidate the changed files first (opcache_invalidate) or rely on opcache
+     * timestamp validation, otherwise the new workers compile the old code.
+     *
+     * Usually you do not call this yourself — wire a trigger instead:
+     * {@see HttpServerConfig::enableHotReload()} (watch files, for development)
+     * or {@see HttpServerConfig::enableReloadOnSignal()} (SIGHUP, for a deploy).
+     *
+     * @return bool True when every replacement worker was resubmitted; false if
+     *              a reload is already running or a replacement failed.
+     */
+    public function reload(): bool {}
+
+    /**
      * Check if server is running.
      */
     public function isRunning(): bool {}
+
+    /**
+     * Whether the extension was built with HTTP/2 support (--enable-http2).
+     */
+    public static function isHttp2(): bool {}
+
+    /**
+     * Whether the extension was built with HTTP/3 support (--enable-http3).
+     */
+    public static function isHttp3(): bool {}
 
     /**
      * Get server telemetry.
@@ -1509,6 +1862,63 @@ final class HttpServer
      * @return array
      */
     public function getHttp3Stats(): array {}
+
+    /**
+     * Snapshot of the server's own internal allocators and cross-worker topic
+     * traffic — the counters that let you attribute RSS growth to a concrete
+     * subsystem rather than guess.
+     *
+     *  - `conn_arena_live`       — http_connection_t slots in use (one per live
+     *                              TCP connection).
+     *  - `conn_arena_slots`      — total slots across all chunks; never shrinks.
+     *  - `conn_arena_chunks`     — slab chunks committed.
+     *  - `conn_arena_bytes`      — virtual commitment of those chunks.
+     *  - `body_pool`             — per-size-class LIFO of large request bodies
+     *                              (1 MB … 128 MB); each entry has `slot_bytes`,
+     *                              `count`, `bytes`.
+     *  - `body_pool_total_bytes` — sum of `bytes` across the classes.
+     *  - `ws_topic_posted`       — cross-worker publishes handed to another
+     *                              worker's mailbox.
+     *  - `ws_topic_skipped`      — workers a publish did NOT wake, because the
+     *                              interest filter proved they hold no
+     *                              subscriber. Large next to `posted` means the
+     *                              filter is earning its keep.
+     *  - `ws_topic_dropped`      — publishes a full worker mailbox refused. This
+     *                              one is data loss: a worker is not draining
+     *                              fast enough, or a client is flooding
+     *                              publishes ({@see HttpServerConfig::setWsPublishRateLimit()}).
+     *
+     * @return array
+     */
+    public function getRuntimeStats(): array {}
+
+    /**
+     * Cross-worker request statistics.
+     *
+     * Opt-in — throws unless {@see HttpServerConfig::setStatsEnabled()} was on
+     * before start(). Returns:
+     *
+     *   [
+     *     'enabled'  => true,
+     *     'workers'  => [ <id> => ['total_requests' => …, …], … ],
+     *     'reactors' => [ … ],   // requests served entirely on a transport reactor
+     *     'totals'   => ['total_requests' => …, …],   // folded across both
+     *   ]
+     *
+     * `totals` carries `total_requests`, the per-class `responses_2xx/3xx/4xx/5xx_total`
+     * (each request is classified exactly once, so the four sum to
+     * `total_requests`), the live gauges `conns_active_h1/h2/h3`, and
+     * `log_records_dropped_total`.
+     *
+     * Each counter is combined the way its meaning allows: monotonic totals sum
+     * and survive a {@see reload()} (a retiring worker's totals are inherited, so
+     * a scraper never sees a counter run backwards just because the pool
+     * rotated); active gauges sum across live workers only. Reads are lock-free,
+     * so the aggregate can be stale by at most one worker mid-rotation.
+     *
+     * @return array
+     */
+    public function getStats(): array {}
 }
 
 // ---------------------------------------------------------------------------
@@ -1520,8 +1930,8 @@ final class HttpServer
  *
  * Instances are created internally by the server and passed to the
  * registered handler — never constructed from user code.
- *
- * @link https://true-async.github.io/en/docs/reference/server/http-request.html
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/http-request.html
  */
 final class HttpRequest
 {
@@ -1607,6 +2017,27 @@ final class HttpRequest
      * Check if connection should be kept alive.
      */
     public function isKeepAlive(): bool {}
+
+    /**
+     * The client's IP address — `"203.0.113.7"`, `"2001:db8::1"`.
+     *
+     * A bare IP: no port, and no brackets around an IPv6 literal. That is the
+     * shape of `$_SERVER['REMOTE_ADDR']` (RFC 3875 §4.1.8), so it feeds straight
+     * into filter_var(…, FILTER_VALIDATE_IP), an ACL, or a rate limiter. The
+     * port is {@see getRemotePort()}.
+     *
+     * NULL on a Unix-socket listener, which has no IP peer.
+     *
+     * This is the peer of the TCP/QUIC connection. It is NOT derived from
+     * X-Forwarded-For — behind a proxy, parse that header yourself, and only when
+     * you trust the proxy that set it.
+     */
+    public function getRemoteAddress(): ?string {}
+
+    /**
+     * The client's port, e.g. 54321. NULL when there is no IP peer.
+     */
+    public function getRemotePort(): ?int {}
 
     /**
      * Get POST data from multipart/form-data or application/x-www-form-urlencoded.
@@ -1706,6 +2137,30 @@ final class HttpRequest
      * @return string|null Next chunk, or null at end of stream.
      */
     public function readBody(int $maxLen = 65536): ?string {}
+
+    // === gRPC ===
+
+    /**
+     * Deframe the next gRPC message from the request body.
+     *
+     * Extracts one 5-byte-length-prefixed message and advances an internal
+     * cursor, so call it once for a unary RPC and loop it for client-streaming.
+     * Returns null once no complete message remains. What you get back is the
+     * raw protobuf; decode it in userland (ext/protobuf).
+     *
+     * @return string|null Next message, or null when none remains.
+     * @throws \Exception if a framed message exceeds the size limit.
+     */
+    public function readMessage(): ?string {}
+
+    /**
+     * The call deadline from the `grpc-timeout` header, in (fractional) seconds,
+     * or null when the client sent none.
+     *
+     * The server does not abort the handler on it — the client enforces its own
+     * deadline — but a handler can honour it against its own operations.
+     */
+    public function getGrpcTimeout(): ?float {}
 }
 
 // ---------------------------------------------------------------------------
@@ -1717,9 +2172,9 @@ final class HttpRequest
  *
  * Instances are created internally by the server and passed to the
  * registered handler — never constructed from user code.
- *
- * @link https://true-async.github.io/en/docs/reference/server/http-response.html
- * @link https://true-async.github.io/en/docs/server/sse.html SSE guide
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/http-response.html
+  * @link https://true-async.github.io/en/docs/server/sse.html SSE guide
  */
 final class HttpResponse
 {
@@ -1903,6 +2358,110 @@ final class HttpResponse
      */
     public function sendable(): bool {}
 
+    // === Server-Sent Events ===
+
+    /**
+     * Put the response into SSE mode: status and headers are committed
+     * (`Content-Type: text/event-stream`) and may no longer change.
+     *
+     * Calling this is optional — the first sseEvent()/sseComment()/sseRetry()
+     * starts the stream by itself. And note that sseStart() alone does NOT put
+     * the headers on the wire: the commit is lazy, and happens on the first
+     * record (or, if none is ever sent, as an empty `200 text/event-stream` when
+     * the response ends). To open the stream eagerly — to unblock the browser's
+     * `onopen` before any real event exists — send an initial {@see sseComment()},
+     * the conventional `:\n\n` prelude, which flushes the headers immediately.
+     *
+     * @throws HttpServerInvalidArgumentException if the handler already set a
+     *         Content-Type other than text/event-stream.
+     * @throws HttpServerRuntimeException if the response is already streaming,
+     *         closed, or has no connection to stream over.
+     * @return static
+     */
+    public function sseStart(): static {}
+
+    /**
+     * Send one SSE record. Multiline `$data` is split into one `data:` field per
+     * line (WHATWG §9.2 framing), and the record is terminated by a blank line
+     * so the browser dispatches it at once. `$event`, `$id` and `$retry` are
+     * emitted only when non-null.
+     *
+     * `$event` and `$id` must contain no `\r` or `\n` — the parser would read
+     * those as field/record separators — and `$id` must contain no NUL, which
+     * would make the parser drop the id entirely.
+     *
+     * `$data === ""` is valid and dispatches an empty MessageEvent. All four
+     * arguments null is a no-op. An event carrying neither `data` nor `retry` is
+     * dropped by the EventSource parser.
+     *
+     * @param string|null $data  Payload. Multiline strings are split.
+     * @param string|null $event Event name (what addEventListener() matches).
+     * @param string|null $id    Event id — echoed as Last-Event-ID on reconnect.
+     * @param int|null    $retry Reconnect-delay hint, ms.
+     * @throws HttpServerInvalidArgumentException on a newline in $event/$id, a
+     *         NUL in $id, or a negative $retry.
+     * @return static
+     */
+    public function sseEvent(
+        ?string $data = null,
+        ?string $event = null,
+        ?string $id = null,
+        ?int $retry = null
+    ): static {}
+
+    /**
+     * Send an SSE comment — a record beginning with `:`.
+     *
+     * Browsers ignore comments, which is exactly what makes them the heartbeat:
+     * they keep the connection alive past an intermediary's idle timeout (nginx
+     * `proxy_read_timeout`, 60 s by default). The canonical payload is the empty
+     * string, which goes on the wire as `:\n\n`. Starts the stream if it is not
+     * already running.
+     *
+     * `$text` must contain no `\r` or `\n`.
+     *
+     * @return static
+     */
+    public function sseComment(string $text = ""): static {}
+
+    /**
+     * Send a bare `retry:` directive — how long the browser should wait before
+     * reconnecting after the stream drops. Sugar for sseEvent(retry: $ms) with no
+     * payload. Starts the stream if it is not already running.
+     *
+     * @param int $milliseconds Non-negative reconnect-delay hint.
+     * @return static
+     */
+    public function sseRetry(int $milliseconds): static {}
+
+    // === gRPC ===
+
+    /**
+     * Declare the response message encoding, before the first
+     * {@see writeMessage()} — it rides the initial HEADERS as `grpc-encoding`,
+     * and every writeMessage() after it compresses automatically.
+     *
+     * Supported: `"gzip"` and `"identity"` (the default; clears a previous
+     * declaration). Compression is a declaration rather than a per-message flag
+     * by design: a compressed message with no declared encoding is a gRPC
+     * protocol error, so the API does not let you express one.
+     *
+     * @return static
+     */
+    public function setGrpcEncoding(string $encoding): static {}
+
+    /**
+     * Frame and stream one gRPC message: the 5-byte length prefix is prepended
+     * for you. The first call activates streaming, exactly as send() does — so
+     * call it once for a unary reply and repeatedly for server-streaming.
+     *
+     * Pass already-protobuf-encoded bytes. The grpc-status travels separately, on
+     * {@see setTrailer()}, and defaults to 0 when unset.
+     *
+     * @return static
+     */
+    public function writeMessage(string $message): static {}
+
     /**
      * Mark this response as ineligible for compression. Overrides every
      * other rule (Accept-Encoding negotiation, MIME whitelist, size
@@ -2024,93 +2583,6 @@ final class HttpResponse
      */
     public function sendFile(string $path, ?SendFileOptions $options = null): void {}
 
-    // === Server-Sent Events (text/event-stream) ===
-
-    /**
-     * Switch the response into Server-Sent Events mode and commit headers.
-     *
-     * Sets the three canonical SSE headers — `Content-Type:
-     * text/event-stream`, `Cache-Control: no-cache, no-transform` and
-     * `X-Accel-Buffering: no` (the last tells nginx not to buffer the
-     * response; without it events stall behind the proxy buffer until it
-     * fills) — and marks the response as not-compressible (a buffering
-     * gzip stream would defeat real-time delivery). The response then
-     * enters streaming mode exactly as the first {@see self::send()} would:
-     * status + headers are committed and may no longer change, but no event
-     * data is emitted until the first sseEvent()/sseComment().
-     *
-     * Calling sseStart() is optional — the first sseEvent()/sseComment()
-     * starts the stream implicitly. Use it when you want headers on the
-     * wire immediately (e.g. to unblock the browser's `onopen`) before any
-     * event is ready.
-     *
-     * Throws {@see HttpServerInvalidArgumentException} if the handler has
-     * already set a Content-Type other than `text/event-stream`, and
-     * {@see HttpServerRuntimeException} if the response is already
-     * streaming, closed, or has no connection to stream over.
-     *
-     * @return static
-     */
-    public function sseStart(): static {}
-
-    /**
-     * Format and send one Server-Sent Event, starting the stream if needed.
-     *
-     * Multiline `$data` is split on `\n` / `\r\n` / `\r` and emitted as one
-     * `data:` field per line (WHATWG §9.2 event-stream framing). `$event`,
-     * `$id` and `$retry` are emitted only when non-null. The record is
-     * terminated by a blank line so the browser dispatches it immediately.
-     *
-     * `$event` and `$id` must not contain `\r` or `\n` (the parser would
-     * read them as field/record separators) and `$id` must not contain NUL
-     * (WHATWG: a NUL makes the parser ignore the whole id) — violations
-     * throw {@see HttpServerInvalidArgumentException}. `$retry` must be
-     * non-negative.
-     *
-     * Empty `$data === ""` is valid and dispatches an empty MessageEvent.
-     * All four arguments null is a no-op. Note the EventSource parser drops
-     * an event carrying neither `data` nor `retry`.
-     *
-     * @param string|null $data  Message payload. Multiline strings are split.
-     * @param string|null $event Event name (matched by addEventListener()).
-     * @param string|null $id    Event id — echoed as Last-Event-ID on reconnect.
-     * @param int|null    $retry Reconnect delay hint in milliseconds.
-     * @return static
-     */
-    public function sseEvent(
-        ?string $data = null,
-        ?string $event = null,
-        ?string $id = null,
-        ?int $retry = null
-    ): static {}
-
-    /**
-     * Send an SSE comment line (a record beginning with `:`).
-     *
-     * Browsers ignore comments, but they keep the connection alive past
-     * intermediary idle timeouts (nginx `proxy_read_timeout`, default 60s).
-     * Call periodically as a heartbeat — the canonical payload is the empty
-     * string, which becomes `:\n\n` on the wire. Starts the stream if it is
-     * not already running.
-     *
-     * `$text` must not contain `\r` or `\n`.
-     *
-     * @param string $text Optional comment payload (informational only).
-     * @return static
-     */
-    public function sseComment(string $text = ""): static {}
-
-    /**
-     * Send a bare `retry:` directive telling the browser how long to wait
-     * before reconnecting after the stream drops, in milliseconds. Sugar
-     * for sseEvent(retry: $milliseconds) with no message payload. Starts
-     * the stream if it is not already running.
-     *
-     * @param int $milliseconds Non-negative reconnect delay hint.
-     * @return static
-     */
-    public function sseRetry(int $milliseconds): static {}
-
     // === State methods ===
 
     /**
@@ -2129,341 +2601,312 @@ final class HttpResponse
 // ---------------------------------------------------------------------------
 
 /**
- * WebSocket close code registry (RFC 6455 §7.4.1).
- *
- * Application-specific codes (4000-4999, RFC 6455 §7.4.2) stay open via
- * {@see WebSocket::close()} accepting `int` alongside this enum.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
- */
-enum WebSocketCloseCode: int
-{
-    case NORMAL                = 1000;
-    case GOING_AWAY            = 1001;
-    case PROTOCOL_ERROR        = 1002;
-    case UNSUPPORTED_DATA      = 1003;
-    case NO_STATUS             = 1005;
-    case ABNORMAL_CLOSURE      = 1006;
-    case INVALID_FRAME_PAYLOAD = 1007;
-    case POLICY_VIOLATION      = 1008;
-    case MESSAGE_TOO_BIG       = 1009;
-    case MANDATORY_EXTENSION   = 1010;
-    case INTERNAL_SERVER_ERROR = 1011;
-    case TLS_HANDSHAKE         = 1015;
-}
-
-/**
- * Base exception for all WebSocket errors.
- *
- * Extends the project-wide {@see HttpServerException}, so existing
- * catch-all handlers keep working.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
- */
-class WebSocketException extends HttpServerException
-{
-}
-
-/**
- * The connection has been closed for a reason other than a normal
- * peer-initiated handshake.
- *
- * `$closeCode` carries the RFC 6455 close code (or 1006 Abnormal Closure
- * when no CLOSE frame was received); `$closeReason` is the UTF-8 reason
- * text from the peer's CLOSE payload, or empty when none was provided.
- * Graceful close (peer-initiated CLOSE 1000) is signalled by
- * {@see WebSocket::recv()} returning null instead of throwing.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
- */
-final class WebSocketClosedException extends WebSocketException
-{
-    public readonly int $closeCode;
-    public readonly string $closeReason;
-}
-
-/**
- * Raised by {@see WebSocket::send()} / {@see WebSocket::sendBinary()} when
- * the outbound queue stays over the high-watermark for longer than
- * write_timeout_ms.
- *
- * Catching this is the application's signal to either close the
- * connection (slow consumer detected) or drop the message and continue.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
- */
-final class WebSocketBackpressureException extends WebSocketException
-{
-}
-
-/**
- * Programmer error: a second coroutine called {@see WebSocket::recv()}
- * while another was already suspended in recv() on the same WebSocket.
- *
- * There is no defined semantics for multiple readers on a single byte
- * stream, so this is rejected at the boundary instead of producing
- * race-prone behavior. Restructure to a single recv loop that dispatches.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
- */
-final class WebSocketConcurrentReadException extends WebSocketException
-{
-}
-
-/**
- * One fully-reassembled WebSocket message, as delivered by
- * {@see WebSocket::recv()}.
- *
- * Text messages have already been UTF-8 validated by the framing layer —
- * receivers can use `$data` as-is without re-checking.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ * One fully-reassembled message, as handed back by {@see WebSocket::recv()}.
+ * Text messages were UTF-8 validated by the framing layer, so `$data` can be
+ * used as-is — there is nothing left to re-check.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketMessage
 {
     /**
-     * Message payload. For text messages this is valid UTF-8.
+     * The payload. Valid UTF-8 for a text message.
      */
     public readonly string $data;
 
     /**
-     * True if the message was sent as a Binary frame (opcode 0x2), false
-     * if Text (opcode 0x1).
+     * True when the peer sent a Binary frame (opcode 0x2), false for Text (0x1).
      */
     public readonly bool $binary;
 
     /**
-     * Instances are constructed internally by the server. User code
-     * receives them via {@see WebSocket::recv()} — never `new
-     * WebSocketMessage`.
+     * Constructed by the server; user code receives these from recv().
      */
     private function __construct() {}
 }
 
 /**
- * Handle on the in-progress WebSocket upgrade.
+ * A handle on the upgrade that has not committed yet — it exists from the moment
+ * the handler is invoked until either reject() is called or the handler returns,
+ * at which point the 101 goes out carrying whatever setSubprotocol() picked.
  *
- * Exists from the moment the handler is invoked until either reject() is
- * called or the handler returns successfully (in which case the 101 is
- * dispatched with whatever subprotocol setSubprotocol() selected).
+ * You only get one by declaring the third parameter:
  *
- * Surface only available to handlers registered with three parameters:
+ *   $server->addWebSocketHandler(
+ *       function (WebSocket $ws, HttpRequest $req, WebSocketUpgrade $u): void { … }
+ *   );
  *
- *   addWebSocketHandler(function (WebSocket $ws, HttpRequest $req,
- *                                 WebSocketUpgrade $u): void { ... });
+ * The arity is read by Reflection at registration; the two-argument form skips
+ * this object and accepts the upgrade with default settings.
  *
- * The arity is detected via Reflection at registration; the two-arg form
- * skips this object entirely and accepts the upgrade with default
- * settings. Once the handshake commits, calls on this object throw —
- * subprotocol can no longer change once Sec-WebSocket-Protocol has been
- * written to the wire.
- *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+ * Once the handshake commits, every method here throws — Sec-WebSocket-Protocol
+ * is already on the wire and a subprotocol cannot be unsaid.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketUpgrade
 {
     private function __construct() {}
 
     /**
-     * Reject the upgrade with the given HTTP status.
+     * Refuse the upgrade: no 101, the connection answers with $status and closes.
+     * This is where authentication belongs. Return from the handler afterwards —
+     * no further I/O is permitted.
      *
-     * The 101 will not be sent; the connection responds with the chosen
-     * status and closes. After reject() the handler should return — no
-     * further I/O is permitted.
-     *
-     * @param int    $status HTTP status code (must be 4xx or 5xx)
-     * @param string $reason Optional response body
+     * @param int $status HTTP status; must be 4xx or 5xx.
+     * @param string $reason Optional response body.
      */
     public function reject(int $status, string $reason = ''): void {}
 
     /**
-     * Pick a subprotocol from the client's offered list.
+     * Choose a subprotocol from the client's offers; the token is echoed back in
+     * Sec-WebSocket-Protocol. Must be called before reject() and before the
+     * handler returns.
      *
-     * The selected token will be echoed in Sec-WebSocket-Protocol. Must be
-     * called before the handler returns and before reject(). The token is
-     * not re-validated against {@see self::getOfferedSubprotocols()} — the
-     * caller is responsible for choosing a valid offer.
-     *
-     * @param string $name Subprotocol token to select
+     * The token is NOT re-validated against {@see getOfferedSubprotocols()} —
+     * picking an offer the client actually made is the caller's job.
      */
     public function setSubprotocol(string $name): void {}
 
     /**
-     * Tokens parsed from Sec-WebSocket-Protocol on the incoming request,
-     * in client-preferred order. Empty when the client did not offer any.
-     *
-     * @return string[]
+     * @return string[] Tokens from Sec-WebSocket-Protocol, in the client's order
+     * of preference. Empty when it offered none.
      */
     public function getOfferedSubprotocols(): array {}
 
     /**
-     * Raw extension offers from Sec-WebSocket-Extensions, in
-     * client-preferred order.
-     *
-     * permessage-deflate (RFC 7692) is negotiated automatically when
-     * enabled via {@see HttpServerConfig::setWsPermessageDeflate()}; the
-     * remaining offers are informational. Empty when the client did not
-     * offer any.
-     *
-     * @return string[]
+     * @return string[] Raw offers from Sec-WebSocket-Extensions, in client order.
+     * permessage-deflate (RFC 7692) is negotiated for you when
+     * {@see HttpServerConfig::setWsPermessageDeflate()} is on; everything else
+     * here is informational. Empty when the client offered none.
      */
     public function getOfferedExtensions(): array {}
 }
 
 /**
- * One WebSocket connection.
- *
- * Created by the server immediately after the upgrade handshake commits
- * and passed as the first argument to the handler registered via
+ * One WebSocket connection. The server creates it the moment the handshake
+ * commits and passes it as the first argument to the handler registered with
  * {@see HttpServer::addWebSocketHandler()}.
  *
- * Lifecycle: the connection is bound to the handler coroutine. When the
- * handler returns — for any reason, including `return` from the recv
- * loop on a null result — the server closes the connection with 1000
- * Normal. Explicit close() before return is supported when a non-default
- * code or reason is required.
+ * Lifecycle
+ * ---------
+ * The connection is bound to the handler coroutine: when the handler returns —
+ * for any reason, including `return` out of the recv loop on a null — the server
+ * closes with 1000 Normal. Call close() explicitly only when you need a
+ * different code or a reason string.
  *
- * Concurrency model: send() / sendBinary() / ping() are safe to call
- * from any coroutine on the same thread — a single cooperative flusher
- * writes queued frames to the socket one at a time, so frames cannot
- * interleave on the wire. recv() is single-reader: a second concurrent
- * recv() throws {@see WebSocketConcurrentReadException}. close() is
- * idempotent and can be called from any coroutine.
+ * Concurrency
+ * -----------
+ * - send() / sendBinary() / ping() are safe from any coroutine on the same
+ *   thread. Producers enqueue whole serialized frames atomically and a single
+ *   cooperative flusher writes them out one at a time, so frames cannot
+ *   interleave on the wire.
+ * - recv() is single-reader: a second concurrent recv() throws
+ *   {@see WebSocketConcurrentReadException}. One byte stream has no meaning for
+ *   two readers.
+ * - close() is idempotent and callable from anywhere.
  *
- * @link https://true-async.github.io/en/docs/reference/server/websocket.html
- * @link https://true-async.github.io/en/docs/server/websocket.html WebSocket guide
+ * `foreach ($ws as $msg)` is the recv() loop written the other way round.
+  *
+  * @link https://true-async.github.io/en/docs/reference/server/websocket.html
+  * @link https://true-async.github.io/en/docs/server/websocket.html WebSocket guide
  */
 final class WebSocket implements \Iterator
 {
     /**
-     * Instances are constructed internally by the server.
+     * Constructed by the server.
      */
     private function __construct() {}
 
     /**
-     * Receive the next text or binary message.
+     * Receive the next text or binary message, suspending until one arrives or
+     * the connection closes.
      *
-     * Suspends the calling coroutine until a complete message arrives or
-     * the connection closes. Returns null when the peer closed cleanly —
-     * a normal CLOSE code (1000/1001/1005) or a plain disconnect with no
-     * CLOSE frame. Loops typically `while (($m = $ws->recv()) !== null)`.
+     * @return WebSocketMessage|null A message, or null when the peer closed
+     * cleanly — a normal CLOSE code (1000/1001/1005), or a plain disconnect with
+     * no CLOSE frame at all. Hence the usual loop:
+     * `while (($m = $ws->recv()) !== null) { … }`.
      *
-     * @return WebSocketMessage|null
-     * @throws WebSocketClosedException On a protocol error or an
-     *         explicit error close code; the exception's readonly
-     *         $closeCode / $closeReason carry the RFC 6455 code and
-     *         reason text.
-     * @throws WebSocketConcurrentReadException If another coroutine is
-     *         already blocked in recv() on this connection.
+     * @throws WebSocketClosedException on a protocol error or an explicit error
+     *         close code; its readonly $closeCode / $closeReason carry the RFC
+     *         6455 code and the peer's reason text.
+     * @throws WebSocketConcurrentReadException if another coroutine is already
+     *         blocked in recv() on this connection.
      */
     public function recv(): ?WebSocketMessage {}
 
     /**
-     * Send a text frame.
+     * Send a text frame. The data MUST be valid UTF-8 — invalid UTF-8 is rejected
+     * here, at the boundary, so the receiver never sees a frame that breaks RFC
+     * 6455 §5.6.
      *
-     * The data MUST be valid UTF-8 — invalid UTF-8 is rejected at the
-     * boundary. Returns immediately when the outbound queue is below the
-     * high-watermark. Suspends the calling coroutine when the queue is
-     * over the watermark and resumes once drain brings it back below.
+     * Returns immediately while the outbound queue is under the high-watermark,
+     * which is the common case. Over it, the calling coroutine suspends until
+     * drain brings the queue back down — and if that suspension outlasts the
+     * write timeout, throws {@see WebSocketBackpressureException}, leaving the
+     * handler to drop the message, close, or retry.
      *
-     * @param string $text Text payload, must be valid UTF-8
-     * @throws WebSocketBackpressureException On prolonged drain stall.
-     * @throws WebSocketClosedException If the connection is already
-     *         closed.
+     * @throws WebSocketBackpressureException on a prolonged drain stall.
+     * @throws WebSocketClosedException if the connection is already closed.
      */
     public function send(string $text): void {}
 
     /**
-     * Send a binary frame. Binary payloads have no UTF-8 constraint.
-     *
-     * @param string $data Binary payload
-     * @see self::send() for backpressure semantics — they are identical.
+     * Send a binary frame — no UTF-8 constraint. Backpressure semantics are
+     * identical to {@see send()}.
      */
     public function sendBinary(string $data): void {}
 
     /**
-     * Non-blocking send.
+     * Non-blocking send. Queues a text frame and returns true while the outbound
+     * queue is under the high-watermark; at or over it, returns false WITHOUT
+     * queueing, so the caller can drop the message, slow down, or close. Never
+     * suspends — which is what makes it the right tool for a broadcast loop,
+     * where one slow client must not stall delivery to everyone else.
      *
-     * Queues a text frame and returns true when the outbound queue is
-     * below the high-water mark; returns false WITHOUT queueing when it
-     * is at/over the mark. Never suspends the calling coroutine — the
-     * right tool for a broadcast loop where one slow client must not
-     * stall delivery to the others. The high-water mark is
-     * {@see HttpServerConfig::setStreamWriteBufferBytes()}.
+     * The high-watermark is {@see HttpServerConfig::setStreamWriteBufferBytes()}
+     * (0 = disabled → trySend always queues and returns true).
      *
-     * @param string $text Text payload, must be valid UTF-8
-     * @return bool True if accepted, false if backpressured (BUSY).
-     * @throws WebSocketClosedException If the connection is already
-     *         closed.
+     * @return bool true if accepted, false if backpressured.
+     * @throws WebSocketClosedException if the connection is already closed.
      */
     public function trySend(string $text): bool {}
 
     /**
-     * Non-blocking binary send.
+     * Non-blocking binary send. @see trySend()
      *
-     * @param string $data Binary payload
-     * @return bool True if accepted, false if backpressured (BUSY).
-     * @throws WebSocketClosedException If the connection is already
-     *         closed.
-     * @see self::trySend()
+     * @return bool true if accepted, false if backpressured.
+     * @throws WebSocketClosedException if the connection is already closed.
      */
     public function trySendBinary(string $data): bool {}
 
     /**
-     * Send a PING frame.
+     * Send a PING; RFC 6455 §5.5.2 requires the peer to answer with a PONG.
+     * Handlers rarely need this — the server's keepalive timer
+     * ({@see HttpServerConfig::setWsPingIntervalMs()}) pings on its own.
      *
-     * The peer is required by RFC 6455 §5.5.2 to reply with a PONG.
-     * Application code rarely needs to call this — the server's
-     * keepalive timer ({@see HttpServerConfig::setWsPingIntervalMs()})
-     * sends pings automatically when configured.
-     *
-     * @param string $payload Up to 125 bytes (RFC 6455 §5.5)
+     * @param string $payload Up to 125 bytes (RFC 6455 §5.5).
      */
     public function ping(string $payload = ''): void {}
 
     /**
-     * Initiate the close handshake and tear the connection down.
+     * Start the close handshake and tear the connection down. Idempotent.
      *
-     * Idempotent — subsequent calls are no-ops.
-     *
-     * @param WebSocketCloseCode|int $code Standard code via the enum, or
-     *        a raw integer in 4000-4999 (application-specific codes per
-     *        RFC 6455 §7.4.2).
-     * @param string $reason UTF-8 reason text, up to 123 bytes.
+     * @param WebSocketCloseCode|int $code A standard code through the enum, or a
+     *        raw int in 4000-4999 (application-specific, RFC 6455 §7.4.2).
+     * @param string $reason UTF-8 reason text, up to 123 bytes — the close
+     *        payload is 125, minus 2 for the code.
      */
-    public function close(WebSocketCloseCode|int $code = WebSocketCloseCode::NORMAL, string $reason = ''): void {}
+    public function close(
+        WebSocketCloseCode|int $code = WebSocketCloseCode::NORMAL,
+        string $reason = ''
+    ): void {}
 
     /**
-     * True after close() has been called or the peer's CLOSE frame has
-     * been processed.
+     * True once close() has been called, or the peer's CLOSE frame processed.
      */
     public function isClosed(): bool {}
 
     /**
-     * The subprotocol negotiated during the upgrade, or null if none was
-     * selected.
+     * The subprotocol negotiated during the upgrade, or null if none was chosen.
      */
     public function getSubprotocol(): ?string {}
 
     /**
-     * Peer address in `host:port` form (IPv4) or `[host]:port` (IPv6)
-     * for TCP listeners. Empty string for Unix-socket listeners.
+     * The peer's IP address — bare, like {@see HttpRequest::getRemoteAddress()}:
+     * no port, no brackets around an IPv6 literal. NULL on a Unix-socket
+     * listener, which has no IP peer.
      */
-    public function getRemoteAddress(): string {}
+    public function getRemoteAddress(): ?string {}
 
     /**
-     * @see self::recv() — iteration mirrors a recv() loop. The cursor
-     * advances by pulling the next message; iteration ends on a graceful
-     * close and throws WebSocketClosedException on an error close.
+     * The peer's port. NULL when there is no IP peer.
      */
+    public function getRemotePort(): ?int {}
+
+    // === Topics — publish/subscribe across every worker ===
+    //
+    // A worker is a thread with its own PHP context, so an array of connections
+    // could only ever reach the peers of one worker — which is why a chat used to
+    // need setWorkers(1). Topics live in the server instead: each worker indexes
+    // the connections it owns, and a publish is handed to every worker, which
+    // delivers to its own sockets. No Redis, no single-worker server.
+    //
+    // A topic is addressed by NAME, at the call site. There is no topic object to
+    // obtain, hold, or pass into a handler.
+    //
+    // Filters follow MQTT: `/` separates levels, `+` matches exactly one level,
+    // and a trailing `#` matches the rest. So `user/42/#` receives both
+    // `user/42/presence` and `user/42`, and `order/+/status` receives the status
+    // of an order that did not exist when you subscribed.
+
+    /**
+     * Subscribe this connection to a topic filter. Idempotent.
+     *
+     * @param string $filter May contain `+` / `#` wildcards.
+     * @throws WebSocketException on a malformed filter, or once the connection
+     *         holds its {@see HttpServerConfig::setWsMaxSubscriptions()} limit.
+     */
+    public function subscribe(string $filter): void {}
+
+    /**
+     * Drop a filter. Idempotent — one never subscribed to is a no-op. A closing
+     * connection unsubscribes from everything by itself.
+     */
+    public function unsubscribe(string $filter): void {}
+
+    /**
+     * The filters this connection holds, in no particular order.
+     *
+     * @return string[]
+     */
+    public function getTopics(): array {}
+
+    /**
+     * Publish a text message to a topic, on every worker.
+     *
+     * Never suspends: a peer whose outbound queue is backed up drops the message
+     * rather than stalling delivery to the rest of the topic — trySend semantics.
+     * When you need a delivery guarantee, send() to the one connection.
+     *
+     * A subscriber matched by several of its own filters still receives one copy.
+     *
+     * @param string $topic A concrete topic. Wildcards are rejected: a message
+     *        fanned out to a pattern has no well-defined destination.
+     * @param bool $excludeSelf Skip this connection — the "everyone but the
+     *        sender" case a chat wants.
+     * @return int Subscribers served on the CALLING worker. Delivery to the other
+     *         workers is asynchronous and cannot be counted here, so this is a
+     *         local number, not a process-wide one.
+     * @throws WebSocketException on a malformed topic, or one carrying a wildcard.
+     * @throws WebSocketBackpressureException when the connection is over its
+     *         {@see HttpServerConfig::setWsPublishRateLimit()}.
+     */
+    public function publish(string $topic, string $text, bool $excludeSelf = true): int {}
+
+    /**
+     * Binary counterpart of {@see publish()}.
+     */
+    public function publishBinary(string $topic, string $data, bool $excludeSelf = true): int {}
+
+    /**
+     * How many connections across all workers a publish to $topic would reach,
+     * wildcard subscribers included.
+     *
+     * Each worker answers with its own count and the answers are summed, so this
+     * is a snapshot rather than a live number: a worker that does not answer in
+     * time is simply left out.
+     */
+    public function subscriberCount(string $topic): int {}
+
+    // === Iterator === so `foreach ($ws as $msg)` mirrors a recv() loop. The
+    // cursor advances by pulling the next message; iteration ends on a graceful
+    // close and throws WebSocketClosedException on an error close.
+
     public function current(): ?WebSocketMessage {}
-
     public function key(): int {}
-
     public function next(): void {}
-
     public function rewind(): void {}
-
     public function valid(): bool {}
 }
 
