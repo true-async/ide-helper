@@ -5,7 +5,7 @@ IDE help files for the [TrueAsync](https://github.com/true-async/php-async) ecos
 Bundled stubs:
 
 - **`Async\*`** — the [`async`](https://github.com/true-async/php-async) extension (coroutines, channels, threads, futures, scopes, pools) plus the global `Cancellation` base class and the pooled `PDO`.
-- **`TrueAsync\*`** — the [HTTP server](https://github.com/true-async/server) extension (`HttpServer`, `HttpRequest`, `HttpResponse`, …).
+- **`TrueAsync\*`** — the [HTTP server](https://github.com/true-async/server) extension: `HttpServer`, `HttpRequest`, `HttpResponse`, `HttpServerConfig`, `StaticHandler`, the full `WebSocket` API (incl. cross-worker pub/sub topics), SSE and gRPC helpers, and the observability surface (`getStats()`, `setLogSinks()`, hot reload).
 - **`TrueAsync\ClickHouse\*`** — the async [ClickHouse client](https://github.com/true-async/php-clickhouse).
 
 ## Install

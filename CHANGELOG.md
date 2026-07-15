@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0
+
+Brought the `TrueAsync\*` HTTP-server stubs fully back in sync with the extension — they had drifted to the 0.6.5 surface and were missing everything shipped since. Verified against the live extension by reflection: the file now covers the whole public class / enum / function surface.
+
+New:
+
+- **WebSocket** — the entire surface: `WebSocket`, `WebSocketMessage`, `WebSocketUpgrade`, the `WebSocketCloseCode` enum and the four `WebSocket*Exception` classes. Includes cross-worker pub/sub **topics** (`subscribe()`, `unsubscribe()`, `getTopics()`, `publish()`, `publishBinary()`, `subscriberCount()`), the recv/send/trySend/ping/close API, and `getRemoteAddress()` / `getRemotePort()`.
+- **Observability** — `HttpServer::getStats()`, `getRuntimeStats()`, `reload()`, `isHttp2()`, `isHttp3()`; plus the `HttpServerConfig` setters for hot reload (`enableHotReload()`, `enableReloadOnSignal()`), cross-worker stats (`setStatsEnabled()`), multi-sink logging (`setLogSinks()`), WebSocket topics/limits, HTTP/3 pacing and buffers, request scope, TLS buffer and the hq docroot.
+- **gRPC / SSE on the request & response** — `HttpRequest::readMessage()` / `getGrpcTimeout()`, `HttpResponse::setGrpcEncoding()` / `writeMessage()` (the SSE `sse*` methods from 0.7.3 are retained).
+
+Also corrected two stale docblocks: `WebSocket::publish()` throws `WebSocketBackpressureException` over the publish rate limit and `subscribe()` throws over the subscription cap; and the `WebSocketUpgrade` three-arg handler is selected by PHP dropping undeclared args, not by Reflection.
+
 ## 0.7.3
 
 Synced `TrueAsync\HttpResponse` with the server extension's Server-Sent Events API:
