@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.1
+
+Docblock fix on `TrueAsync\HttpServerConfig::setBootloader()`. The old wording —
+"Only consulted when `setWorkers()` > 1" — read like a footnote rather than a
+rule you have to design around: an embedder put its entire per-worker
+initialization in the bootloader, ran with one worker, and got silence. The stub
+now states outright that in pool mode every worker is a fresh thread the closure
+has to set up, while with a single worker the server runs in the calling
+process, which the caller has already prepared — so that setup is the caller's
+own. Mirrors true-async/server#142.
+
 ## 0.8.0
 
 Completed the `TrueAsync\*` HTTP-server sync. 0.7.4 brought over the WebSocket
