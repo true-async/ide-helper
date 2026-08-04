@@ -12,26 +12,33 @@ class PDO
      * Enable the built-in TrueAsync asynchronous connection pool.
      * Default: false
      */
-    public const ATTR_POOL_ENABLED = 10001;
+    public const ATTR_POOL_ENABLED = 22;
 
     /**
      * Minimum number of connections the pool keeps open.
      * Default: 0
      */
-    public const ATTR_POOL_MIN = 10002;
+    public const ATTR_POOL_MIN = 23;
 
     /**
      * Maximum number of concurrent connections in the pool.
      * Default: 10
      */
-    public const ATTR_POOL_MAX = 10003;
+    public const ATTR_POOL_MAX = 24;
 
     /**
-     * How often to check if a connection is alive (in seconds).
+     * How often to check if a connection is alive, in milliseconds.
      * Set to 0 to disable background health checks.
      * Default: 0
      */
-    public const ATTR_POOL_HEALTHCHECK_INTERVAL = 10004;
+    public const ATTR_POOL_HEALTHCHECK_INTERVAL = 25;
+
+    /**
+     * Number of prepared statements cached per pooled connection.
+     * Set to 0 to disable the cache.
+     * Default: 0
+     */
+    public const ATTR_POOL_STMT_CACHE_SIZE = 26;
 
     /**
      * Returns the TrueAsync connection pool object.

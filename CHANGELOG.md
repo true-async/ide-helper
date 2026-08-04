@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.2
+
+`PDO` pool attributes corrected against the live extension.
+`ATTR_POOL_HEALTHCHECK_INTERVAL` was documented as seconds; the attribute has
+always been read as milliseconds, so an application asking for a check every 30
+seconds got one every 30 milliseconds — laravel-spawn's config carried that
+wording downstream, and a pool healthcheck firing 33 times a second was measured
+on a live worker. The constants also had invented values (10001…10004); they are
+22…26. `ATTR_POOL_STMT_CACHE_SIZE` was missing and is now here.
+
 ## 0.8.1
 
 Docblock fix on `TrueAsync\HttpServerConfig::setBootloader()`. The old wording —
