@@ -31,16 +31,31 @@ final class Scope implements ScopeProvider
     public function provideScope(): Scope {}
 
     /**
-     * Create a new root Scope.
+     * Create a root Scope: no parent Scope stands above it.
+     *
+     * Context lookup from inside stops here, so {@see current_context()}->find() never
+     * reaches the main Scope and {@see request_context()} returns null; {@see root_context()}
+     * still returns the main Scope's Context. Disposal is not safe by default: coroutines
+     * still running when the Scope is disposed are cancelled, until {@see allowZombies()}
+     * opts back in. Use {@see inherit()} for a Scope that continues the current one.
      */
     public function __construct() {}
 
     /**
-     * Mark the scope as "not safely disposable" and return it.
+     * Mark the scope as not safely disposable and return it: coroutines outliving the
+     * scope are cancelled instead of turning into zombies.
      *
      * @return Scope $this
      */
     public function asNotSafely(): Scope {}
+
+    /**
+     * Opt the scope into safe disposal and return it: coroutines outliving the scope
+     * become zombies instead of being cancelled.
+     *
+     * @return Scope $this
+     */
+    public function allowZombies(): Scope {}
 
     /**
      * Spawn a new coroutine inside this scope.

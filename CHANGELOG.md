@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.3
+
+`Async\Context` corrected against the extension. The class was documented as an
+immutable store whose `set()` and `unset()` return new instances; both change the
+Context in place and return it, and `set()` refuses a key the Context already holds
+unless `$replace` is true. `get()` and `has()` were documented as reading the local
+values alone, while both read the Contexts of the Scopes above as well, and `get()`
+throws `Async\ContextException`, a class this package did not carry and now does.
+`current_context()` was described as the current coroutine's context; it returns the
+Context of the current Scope, and the coroutine's own comes from `coroutine_context()`.
+
+`Scope::__construct()` now states what a root Scope costs. No parent stands above it,
+so lookup from inside never reaches the main Scope and `request_context()` is null
+there; disposal cancels coroutines that outlive the Scope until `allowZombies()` (also
+missing from this stub, now added) is called. Mirrors true-async/php-async#237, where a
+value set on `root_context()` in an HTTP bootloader was unreachable from the request
+handler through `current_context()`.
+
 ## 0.8.2
 
 `PDO` pool attributes corrected against the live extension.

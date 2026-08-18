@@ -235,7 +235,11 @@ function delay(int $ms): void {}
 function timeout(int $ms): Timeout {}
 
 /**
- * Return the current coroutine's context.
+ * Return the Context of the current Scope.
+ *
+ * Values set here are read by every coroutine below this Scope, because Context::find()
+ * walks up the Scope chain. At top level this is the main Scope, so the returned Context
+ * is the one {@see root_context()} returns.
  *
  * @return Context
  * @since 8.6
@@ -244,7 +248,10 @@ function timeout(int $ms): Timeout {}
 function current_context(): Context {}
 
 /**
- * Return the context of the root coroutine in the current coroutine hierarchy.
+ * Return the Context of the current coroutine.
+ *
+ * Unlike {@see current_context()}, this Context belongs to the coroutine alone: no other
+ * coroutine reads it.
  *
  * @return Context
  * @since 8.6
@@ -262,7 +269,11 @@ function coroutine_context(): Context {}
 function current_coroutine(): Coroutine {}
 
 /**
- * Return the root context of the scheduler.
+ * Return the Context of the main Scope, the root of the Scope tree.
+ *
+ * Values set here are read through Context::find() by every coroutine whose Scope descends
+ * from the main Scope, which is all of them except those under a `new Scope()`. Those reach
+ * the values by calling root_context() directly.
  *
  * @return Context
  * @since 8.6
