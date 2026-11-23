@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.0
+
+Stubs checked against php-async 1.0.0, TrueAsync server 1.0.0 and php-clickhouse 0.1.6 by Reflection over both
+sides. The server stub is the server's own `ide-stubs/true-async-server.php`: it adds `RateLimit`, `Room`,
+`RoomDeliveryException` and 31 methods, drops `HttpResponse::send()`, `isClosed()`, `getBodyStream()` and
+`setBodyStream()`, and `HttpResponse::write()` streams; the buffered append is `appendBody()`.
+
+`PDO::ATTR_POOL_INIT_SQL` is added. `FileSystemWatcher::__construct()` gains `$debounceMs`, `$maxHoldMs` and
+`$extensions`, and `ThreadPool::reload()` is added. `protect()`, `await()`, `await_any_or_fail()` and the `recv()`,
+`await()`, `acquire()`, `tryAcquire()` and `getResult()` methods declare `mixed`, as the extension does.
+
+Corrected against the extension: `await_first_success()` returns `[null, $errors]` when every trigger fails rather
+than throwing; `timeout()` is a cancellation token that does nothing on its own; `Scope::disposeSafely()` does not
+wait and leaves coroutines as zombies; `Scope::isFinished()` is true right after a cancel; `ThreadPool::close()`
+runs the queued tasks; a failed bootloader rejects tasks with its own exception; `exit()` in a task closes the
+worker; `Pool::release()` throws for a foreign resource and on the pool of `PDO::getPool()`. `graceful_shutdown()`
+and `PDO::ATTR_POOL_ENABLED` document `async.shutdown_grace` and the `ATTR_PERSISTENT` restriction.
+
 ## 0.8.3
 
 `Async\Context` corrected against the extension. The class was documented as an

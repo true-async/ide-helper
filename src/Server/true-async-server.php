@@ -12,7 +12,7 @@
  * and functions the extension registers.
  *
  * @since      8.6
- * @version    0.11.0
+ * @version    1.0.0
  * @link       https://github.com/true-async/server
  * @link       https://true-async.github.io/en/docs/server/index.html
  */
@@ -27,7 +27,6 @@ namespace TrueAsync {
 
 /**
  * Base exception for all HTTP server errors.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 class HttpServerException extends \Exception
@@ -36,7 +35,6 @@ class HttpServerException extends \Exception
 
 /**
  * Runtime errors during server operation.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerRuntimeException extends HttpServerException
@@ -45,7 +43,6 @@ final class HttpServerRuntimeException extends HttpServerException
 
 /**
  * Invalid argument passed to server methods.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerInvalidArgumentException extends HttpServerException
@@ -54,7 +51,6 @@ final class HttpServerInvalidArgumentException extends HttpServerException
 
 /**
  * Connection-related errors (socket, network).
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerConnectionException extends HttpServerException
@@ -63,7 +59,6 @@ final class HttpServerConnectionException extends HttpServerException
 
 /**
  * Protocol-level errors (malformed HTTP, invalid headers).
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerProtocolException extends HttpServerException
@@ -72,7 +67,6 @@ final class HttpServerProtocolException extends HttpServerException
 
 /**
  * Timeout errors (read, write, keep-alive).
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 final class HttpServerTimeoutException extends HttpServerException
@@ -92,7 +86,6 @@ final class HttpServerTimeoutException extends HttpServerException
  *
  * NOT marked final — user code may extend it for richer typing
  * (NotFoundException extends HttpException etc).
-  *
   * @link https://true-async.github.io/en/docs/reference/server/exceptions.html
  */
 class HttpException extends \Async\AsyncCancellation
@@ -107,7 +100,6 @@ class HttpException extends \Async\AsyncCancellation
  * filter or once the connection is at its
  * {@see HttpServerConfig::setWsMaxSubscriptions()} limit, and by
  * {@see WebSocket::publish()} on a malformed topic or one carrying a wildcard.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 class WebSocketException extends HttpServerException
@@ -121,7 +113,6 @@ class WebSocketException extends HttpServerException
  *
  * A graceful peer close is NOT an exception: {@see WebSocket::recv()} returns
  * null instead.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketClosedException extends WebSocketException
@@ -138,7 +129,6 @@ final class WebSocketClosedException extends WebSocketException
  *
  * Either way the connection stays up: catching this is the application's cue to
  * drop the message, back off, or close.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketBackpressureException extends WebSocketException
@@ -150,11 +140,35 @@ final class WebSocketBackpressureException extends WebSocketException
  * another was already suspended in recv() on the same connection. A single byte
  * stream has no defined semantics for multiple readers, so this is rejected at
  * the boundary rather than raced. Restructure to one recv loop that dispatches.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketConcurrentReadException extends WebSocketException
 {
+}
+
+/**
+ * Reliable room delivery ({@see Room::send()} / {@see HttpServer::send()})
+ * failed: the retry deadline passed with a target mailbox still full, the
+ * outbound queue was at its cap, or send() was called outside a coroutine.
+ *
+ * Delivery is at-least-once with partial delivery — the fast targets were posted
+ * during fan-out, before any failure verdict. The counts say how much landed, so
+ * re-sending (which duplicates on the ones that already got it) is a decision,
+ * not an accident.
+ *
+ * Extends HttpServerException rather than WebSocketException: rooms are served
+ * by a build configured with --disable-websocket, where that class does not
+ * exist. A handler that caught WebSocketException around a send() catches
+ * HttpServerException instead.
+ *
+ */
+final class RoomDeliveryException extends HttpServerException
+{
+    /** Worker mailboxes that had accepted the message when the send failed. */
+    public readonly int $delivered;
+
+    /** Targets still unfilled when the send gave up. */
+    public readonly int $pending;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,7 +188,6 @@ final class WebSocketConcurrentReadException extends WebSocketException
  *
  * TRACE / FATAL are intentionally absent — TRACE is unused, FATAL is
  * delivered via zend_error_noreturn(E_ERROR) which already terminates.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/log-severity.html
  */
 enum LogSeverity: int
@@ -188,7 +201,6 @@ enum LogSeverity: int
 
 /**
  * Content-Disposition for HttpResponse::sendFile().
-  *
   * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
  */
 enum SendFileDisposition: string
@@ -207,7 +219,6 @@ enum SendFileDisposition: string
  *                      dispatcher, which spawns the regular handler
  *                      coroutine — the request is delivered to
  *                      {@see HttpServer::addHttpHandler()}.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticOnMissing: int
@@ -226,7 +237,6 @@ enum StaticOnMissing: int
  * ALLOW:            dotfiles are served like any other file.
  * IGNORE:           treat as if the file does not exist (passthrough
  *                   per {@see StaticOnMissing}).
-  *
   * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticDotfiles: int
@@ -247,7 +257,6 @@ enum StaticDotfiles: int
  *                        configured root directory.
  * OWNER_MATCH:           follow only if the symlink and its final
  *                        target are owned by the same uid.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 enum StaticSymlinks: int
@@ -266,7 +275,6 @@ enum StaticSymlinks: int
  *
  * NO_STATUS, ABNORMAL_CLOSURE and TLS_HANDSHAKE are reserved: they describe
  * what happened, but MUST NOT be sent on the wire.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 enum WebSocketCloseCode: int
@@ -291,7 +299,6 @@ enum WebSocketCloseCode: int
 
 /**
  * Options for HttpResponse::sendFile(). Value object, immutable.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/send-file-options.html
  */
 final readonly class SendFileOptions
@@ -313,7 +320,6 @@ final readonly class SendFileOptions
 
 /**
  * Represents an uploaded file (PSR-7 compatible).
-  *
   * @link https://true-async.github.io/en/docs/reference/server/uploaded-file.html
  */
 final class UploadedFile
@@ -398,7 +404,6 @@ final class UploadedFile
  * / Apache emit when a directory URL is missing the trailing slash;
  * call `setIndexFiles([])` / `disableIndex()` if your deployment relies
  * on a real catch-all on directory paths.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/static-handler.html
  */
 final class StaticHandler
@@ -467,9 +472,26 @@ final class StaticHandler
 
     /**
      * Glob patterns whose matching paths return 404 regardless of
-     * existence. Patterns are matched against the path *relative to
-     * the root directory*, with `/` as the separator.
+     * existence — or fall through to the PHP handler on an
+     * `on_missing: NEXT` mount.
      *
+     * Patterns are matched against the path *relative to the root
+     * directory*, with `/` as the separator, by gitignore's rule:
+     *
+     *   `*.php`      a file of that name at any depth
+     *   `/index.php` that file at the root directory only
+     *   `cache/x`    anchored at the root directory, `*` stopping at each `/`
+     *   `cache/`     a directory of that name at any depth, and all it holds
+     *   `cache/**`   anchored, `*` crossing `/`
+     *
+     * A pattern opening with a double star names every directory, the root
+     * directory among them. A pattern without `/` reads the file name, so a
+     * directory named like it keeps serving what it holds — `cache/` is how to
+     * cover a directory. Case follows the platform's own filesystem:
+     * case-insensitive on Windows, case-sensitive elsewhere.
+     *
+     * @throws HttpServerInvalidArgumentException when a pattern is empty or
+     *         longer than 512 bytes.
      * @return static
      */
     public function hide(string ...$globs): static {}
@@ -571,7 +593,6 @@ final class StaticHandler
 
 /**
  * HTTP Server configuration.
-  *
   * @link https://true-async.github.io/en/docs/server/configuration.html
   * @link https://true-async.github.io/en/docs/reference/server/http-server-config.html
  */
@@ -594,7 +615,8 @@ final class HttpServerConfig
      * {@see addHttp3Listener()}.
      *
      * @param string $host Host to bind (e.g., "127.0.0.1", "0.0.0.0")
-     * @param int $port Port to listen on
+     * @param int $port Port to listen on, or 0 to take whatever the kernel
+     *                  gives — {@see HttpServer::getBoundListeners()} reports it
      * @param bool $tls Enable TLS for this listener
      * @return static
      */
@@ -677,6 +699,13 @@ final class HttpServerConfig
      * transfer_obj, and the parent's `start()` awaits all workers'
      * completion. Each worker re-binds the same listeners; the kernel
      * load-balances accept() across them via `SO_REUSEPORT` (Linux).
+     *
+     * Which worker answers a given connection is not promised. Where the
+     * kernel has no load-balanced `SO_REUSEPORT` — macOS, the other BSDs,
+     * Solaris — the workers share one listening socket and nothing arbitrates
+     * between them, so a busy machine can leave a worker idle while another
+     * drains the queue. Work that must be spread evenly belongs behind a queue
+     * of its own, not behind the accept.
      *
      * @return static
      */
@@ -850,15 +879,15 @@ final class HttpServerConfig
      * 100 ms, the listen socket is stopped until existing work drains.
      *
      * Guidance:
-     *   - Fast handlers (<5 ms):  leave at default (5)
+     *   - Fast handlers (<5 ms):  5 ms
      *   - Typical web handlers:   10 – 20 ms
      *   - Slow handlers (DB, IO): 50 – 100 ms
-     *   - 0 disables CoDel entirely (hard cap via setMaxConnections still
-     *     applies if configured).
+     *   - 0, the default, disables CoDel (the hard cap of setMaxConnections
+     *     still applies if configured).
      *
-     * See docs/BACKPRESSURE.md for the full mechanism.
+     * See "Timeouts and admission control" in docs/USAGE.md for the mechanism.
      *
-     * @param int $ms Target in milliseconds (0–10000). Default: 5.
+     * @param int $ms Target in milliseconds (0–10000). Default: 0 (off).
      * @return static
      */
     public function setBackpressureTargetMs(int $ms): static {}
@@ -944,14 +973,14 @@ final class HttpServerConfig
     // === Streaming responses ===
 
     /**
-     * Per-stream chunk-queue cap for HttpResponse::send() backpressure.
+     * Per-stream chunk-queue cap for HttpResponse::write() backpressure.
      *
-     * When handler's send() call grows the stream's chunk queue past
-     * this many bytes, the coroutine suspends until nghttp2 drains
-     * enough to drop below. HTTP/2 only; HTTP/1 chunked path uses
-     * the kernel send buffer instead.
+     * When the handler's write() call grows the stream's chunk queue past
+     * this many bytes, the coroutine suspends until it drains enough to
+     * drop below. It bounds HTTP/2 streams, the HTTP/1 connection's
+     * outbound queue and WebSocket sends.
      *
-     * Default: 262144 (256 KiB). Valid: 4096 .. 67108864 (64 MiB).
+     * Default: 262144 (256 KiB). Valid: 4096 .. 4194304 (4 MiB).
      * Industry: gRPC-Go 64 KiB, Envoy 1 MiB, Node.js 16 KiB.
      *
      * @param int $bytes
@@ -978,10 +1007,16 @@ final class HttpServerConfig
     public function getH2StaticBudgetMax(): int {}
 
     /**
-     * Set the maximum request body size accepted on both HTTP/1 and HTTP/2
-     * listeners (bytes). H1 rejects with 413 + connection close; H2 rejects
-     * with RST_STREAM(INTERNAL_ERROR) and the connection stays up for other
-     * streams.
+     * Set the maximum request body size accepted on HTTP/1, HTTP/2 and
+     * HTTP/3 listeners (bytes), multipart uploads included. H1 answers 413
+     * and closes the connection. H2 and H3 answer 413 when no response is
+     * decided yet, then stop the upload with RST_STREAM(NO_ERROR) or
+     * STOP_SENDING(H3_NO_ERROR), and the connection stays up for other
+     * streams; a response already decided is delivered whole, and only one a
+     * handler is still streaming is reset. A handler already running is
+     * cancelled with HttpException 413, which every read of the body throws
+     * too; a handler that catches it may answer itself. HTTP/3 buffers a body
+     * in memory and holds it to 16 MiB at most.
      *
      * Default: 10485760 (10 MiB). Valid: 1024 .. 17179869184 (16 GiB).
      *
@@ -1070,6 +1105,50 @@ final class HttpServerConfig
 
     /** @return int */
     public function getWsPublishBurst(): int {}
+
+    /**
+     * Reliable-send retry cadence in milliseconds — how long {@see Room::send()}
+     * waits (a coroutine sleep) between retries of a target whose mailbox was
+     * full. Smaller means a full target is recovered sooner, at more attempts.
+     *
+     * Default: 50. Applies to Room::send()/HttpServer::send() only; publish()
+     * never retries.
+     *
+     * Read once, when the server's room machinery is created (enableRooms(), the
+     * first room(), or start()), and used by every thread that joins it: the
+     * drainer is one timer per worker, so there is nothing a later per-send value
+     * could change.
+     */
+    public function setWsPublishRetryIntervalMs(int $ms): static {}
+
+    /** @return int */
+    public function getWsPublishRetryIntervalMs(): int {}
+
+    /**
+     * Default deadline in milliseconds for a reliable send: how long the outbound
+     * drainer keeps retrying a still-full target before giving up — the message is
+     * dropped (counted `retry_expired` in {@see HttpServer::getRuntimeStats()}),
+     * and a blocking {@see Room::send()} throws. A per-call $timeoutMs overrides.
+     *
+     * Default: 5000.
+     */
+    public function setWsPublishRetryTimeoutMs(int $ms): static {}
+
+    /** @return int */
+    public function getWsPublishRetryTimeoutMs(): int {}
+
+    /**
+     * Per-worker cap on the reliable-send outbound queue. When it is full,
+     * {@see Room::trySend()} returns false and {@see Room::send()} throws, parking
+     * nothing — the honest bound (NATS-style) that keeps a wedged consumer from
+     * growing the sender without limit.
+     *
+     * Default: 4096.
+     */
+    public function setWsPublishRetryQueueMax(int $count): static {}
+
+    /** @return int */
+    public function getWsPublishRetryQueueMax(): int {}
 
     /**
      * Server-initiated PING cadence (ms) on otherwise-idle connections. The peer
@@ -1265,6 +1344,48 @@ final class HttpServerConfig
     /** @return bool */
     public function isStatsEnabled(): bool {}
 
+    /**
+     * Whether a handler keeps running when its client leaves. Off by default:
+     * on HTTP/1, a client that resets or closes the connection while a handler
+     * runs cancels the handler with {@see HttpException} 499, as a reset stream
+     * does on HTTP/2, so its awaits throw and its finally blocks run. A client
+     * that shuts its write half with more requests already sent is still
+     * answered. On, the handler runs to its end, as under PHP's
+     * ignore_user_abort(), and its writes throw 499. Fixed at server start.
+     *
+     * @param bool $ignore
+     * @return static
+     */
+    public function setIgnoreUserAbort(bool $ignore): static {}
+
+    /** @return bool */
+    public function getIgnoreUserAbort(): bool {}
+
+    /**
+     * Proxies whose `X-Forwarded-For` names the client a rate limit counts
+     * (#414). Each entry is an IPv4 or IPv6 address, optionally with a `/bits`
+     * prefix, or the word `unix` for Unix-socket peers; up to 64 entries.
+     * Replaces any earlier list.
+     *
+     * Only the rate limiter reads it: `HttpRequest::getRemoteAddress()` and
+     * the access log keep the socket peer. From a trusted peer the header is
+     * read from the right: trusted hops are skipped and the first other
+     * address is the client; an element that is not an address, or a header
+     * of trusted hops only, leaves the last trusted hop as the client.
+     *
+     * @param list<string> $proxies
+     * @throws HttpServerInvalidArgumentException on an entry that is neither
+     * @return static
+     */
+    public function setTrustedProxies(array $proxies): static {}
+
+    /**
+     * The trusted proxies, normalised: `a.b.c.d/bits`, `v6/bits`, `unix`.
+     *
+     * @return list<string>
+     */
+    public function getTrustedProxies(): array {}
+
     // === HTTP body compression ===
 
     /**
@@ -1412,71 +1533,114 @@ final class HttpServerConfig
     // === Buffers ===
 
     /**
-     * Set write buffer size.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
      *
-     * @param int $size Buffer size in bytes
-     * @return static
+     * setStreamWriteBufferBytes() bounds the bytes queued on a connection or
+     * stream (4 KiB to 4 MiB; HTTP/1, HTTP/2 and WebSocket).
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function setWriteBufferSize(int $size): static {}
 
     /**
-     * Get write buffer size.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
+     *
+     * setStreamWriteBufferBytes() bounds the bytes queued on a connection or
+     * stream (4 KiB to 4 MiB; HTTP/1, HTTP/2 and WebSocket).
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function getWriteBufferSize(): int {}
 
     // === Protocol options ===
 
     /**
-     * Enable HTTP/2 support.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
      *
-     * @param bool $enable Enable HTTP/2
-     * @return static
+     * HTTP/2 is per listener: addListener() negotiates it, addHttp2Listener()
+     * serves only HTTP/2, addHttp2Handler() handles it.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function enableHttp2(bool $enable): static {}
 
     /**
-     * Check if HTTP/2 is enabled.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
+     *
+     * HTTP/2 is per listener: addListener() negotiates it, addHttp2Listener()
+     * serves only HTTP/2, addHttp2Handler() handles it.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function isHttp2Enabled(): bool {}
 
     /**
-     * Enable WebSocket support.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
      *
-     * @param bool $enable Enable WebSocket
-     * @return static
+     * HttpServer::addWebSocketHandler() enables WebSocket.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function enableWebSocket(bool $enable): static {}
 
     /**
-     * Check if WebSocket is enabled.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
+     *
+     * HttpServer::addWebSocketHandler() enables WebSocket.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function isWebSocketEnabled(): bool {}
 
     /**
-     * Enable automatic protocol detection.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
      *
-     * @param bool $enable Enable detection
-     * @return static
+     * Protocol detection always runs, limited by each listener's protocols and
+     * the registered handlers.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function enableProtocolDetection(bool $enable): static {}
 
     /**
-     * Check if protocol detection is enabled.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
+     *
+     * Protocol detection always runs, limited by each listener's protocols and
+     * the registered handlers.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function isProtocolDetectionEnabled(): bool {}
 
     // === TLS configuration ===
 
     /**
-     * Enable TLS for default listener.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
      *
-     * @param bool $enable Enable TLS
-     * @return static
+     * TLS is per listener: addListener($host, $port, true), addHttp1Listener()
+     * or addHttp2Listener(). The constructor's listener is plaintext, and HTTP/3
+     * listeners are always TLS.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function enableTls(bool $enable): static {}
 
     /**
-     * Check if TLS is enabled.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
+     *
+     * getListeners() reports 'tls' for each listener.
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function isTlsEnabled(): bool {}
 
@@ -1540,18 +1704,28 @@ final class HttpServerConfig
     // === Body handling ===
 
     /**
-     * Set auto-await mode for request body.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
      *
-     * When enabled, non-multipart requests wait for full body before handler is called.
-     * Multipart requests always use streaming.
+     * It never decided when the handler starts. HTTP/1 starts it after the body;
+     * HTTP/2 and HTTP/3 may start it after the headers, so call awaitBody() before
+     * getBody(). setBodyStreamingEnabled(true) delivers a large body through
+     * readBody().
      *
-     * @param bool $enable Enable auto-await
-     * @return static
+     * @throws HttpServerRuntimeException always
      */
     public function setAutoAwaitBody(bool $enable): static {}
 
     /**
-     * Check if auto-await is enabled.
+     * Removed: the value it stored was read by nothing. The declaration stays for
+     * one minor release and always throws.
+     *
+     * It never decided when the handler starts. HTTP/1 starts it after the body;
+     * HTTP/2 and HTTP/3 may start it after the headers, so call awaitBody() before
+     * getBody(). setBodyStreamingEnabled(true) delivers a large body through
+     * readBody().
+     *
+     * @throws HttpServerRuntimeException always
      */
     public function isAutoAwaitBodyEnabled(): bool {}
 
@@ -1658,8 +1832,9 @@ final class HttpServerConfig
 
     /**
      * Stream request bodies into a per-request queue (issue #26) instead
-     * of accumulating into `req->body`. Handlers must consume via
-     * {@see HttpRequest::awaitBody()}; getBody() throws.
+     * of accumulating into `req->body`. A large or unsized body streams and
+     * is consumed via {@see HttpRequest::readBody()}; a small one and a form
+     * are still buffered. getBody() returns "" for a body that streams.
      *
      * @return static
      */
@@ -1685,8 +1860,105 @@ final class HttpServerConfig
 // ---------------------------------------------------------------------------
 
 /**
+ * A request rate limit rule (#414): a token bucket per client address.
+ *
+ * Attach with {@see HttpServer::addRateLimit()}. A request over the limit of
+ * any rule it matches is answered `429 Too Many Requests` with `Retry-After`,
+ * and the handler does not run; a gRPC call gets `grpc-status: 8`
+ * (RESOURCE_EXHAUSTED) instead. A request is checked against every rule it
+ * matches first, and takes a token from each only when all of them admit it.
+ *
+ * The client is the socket peer, or, behind a proxy listed in
+ * {@see HttpServerConfig::setTrustedProxies()}, the address the proxies put in
+ * `X-Forwarded-For`. IPv6 clients are keyed by their /64 unless
+ * {@see RateLimit::ipv6Prefix()} says otherwise.
+ *
+ * Each server instance keeps its own buckets: with `setWorkers(N)` a client
+ * may get up to N times the limit.
+ *
+ * The rule is locked once added to a server; its setters throw from then on.
+ *
+ * @strict-properties
+ */
+final class RateLimit
+{
+    /**
+     * @param int $requests   tokens refilled per window, 1 to 1000000
+     * @param int $perSeconds window length in seconds, 1 to 86400
+     *
+     * @throws HttpServerInvalidArgumentException on a value out of range
+     */
+    public function __construct(int $requests, int $perSeconds) {}
+
+    /**
+     * Bucket size: how many requests a client may make at once after being
+     * idle. Default: `$requests`. 1 to 1000000, and the bucket may hold at
+     * most 2^62 ns of credit (`perSeconds * burst / requests` seconds).
+     *
+     * @throws HttpServerInvalidArgumentException
+     * @throws HttpServerRuntimeException once the rule is added to a server
+     */
+    public function burst(int $burst): static {}
+
+    /**
+     * Limits the rule to these path prefixes; replaces any earlier list. A
+     * prefix starts with `/` and does not end with one, except `/` itself,
+     * which means every path: with `/` in the list the other prefixes are
+     * dropped, as if paths() had not been called. `/api` covers `/api` and
+     * `/api/...`, not `/apix`. The path is matched decoded (`%77` is `w`) and
+     * normalised (`//` collapsed, `.` and `..` resolved); a target with a
+     * malformed `%` sequence matches every prefix. Up to 32 prefixes.
+     * Default: every path.
+     *
+     * @throws HttpServerInvalidArgumentException
+     * @throws HttpServerRuntimeException once the rule is added to a server
+     */
+    public function paths(string ...$prefixes): static {}
+
+    /**
+     * Limits the rule to these request methods; replaces any earlier list.
+     * Tokens are upper-cased; HEAD is its own method. Up to 32 methods.
+     * Default: every method.
+     *
+     * @throws HttpServerInvalidArgumentException
+     * @throws HttpServerRuntimeException once the rule is added to a server
+     */
+    public function methods(string ...$methods): static {}
+
+    /**
+     * Buckets this rule keeps per server instance, 1024 to 1048576. Default
+     * 65536, 1.5 MiB. When the table is full a new client takes the slot of
+     * one whose bucket has refilled, else of the one idle longest; that client
+     * starts again with a full bucket. The sum over a server's rules is at
+     * most 2097152.
+     *
+     * @throws HttpServerInvalidArgumentException
+     * @throws HttpServerRuntimeException once the rule is added to a server
+     */
+    public function maxKeys(int $maxKeys): static {}
+
+    /**
+     * How many leading bits of an IPv6 client form its key, 48 to 128.
+     * Default 64: one /64 is one client.
+     *
+     * @throws HttpServerInvalidArgumentException
+     * @throws HttpServerRuntimeException once the rule is added to a server
+     */
+    public function ipv6Prefix(int $bits): static {}
+
+    /**
+     * The rule's name in {@see HttpServer::getTelemetry()}: 1 to 64 bytes of
+     * letters, digits, `_`, `-` and `.`. Default `rule<N>`, N its position
+     * among the server's rules from 1. Names are unique per server.
+     *
+     * @throws HttpServerInvalidArgumentException
+     * @throws HttpServerRuntimeException once the rule is added to a server
+     */
+    public function name(string $name): static {}
+}
+
+/**
  * HTTP Server.
-  *
   * @link https://true-async.github.io/en/docs/server/quickstart.html
   * @link https://true-async.github.io/en/docs/reference/server/http-server.html
  */
@@ -1700,7 +1972,12 @@ final class HttpServer
     public function __construct(HttpServerConfig $config) {}
 
     /**
-     * Add HTTP/1.1 request handler.
+     * Add the request handler every protocol falls back to.
+     *
+     * HTTP/1.1, HTTP/2 and HTTP/3 all reach this handler unless a
+     * protocol-specific one is registered beside it — see
+     * {@see HttpServer::addHttp2Handler()} and
+     * {@see HttpServer::addGrpcHandler()}.
      *
      * Handler signature: function(HttpRequest $request, HttpResponse $response): void
      *
@@ -1724,10 +2001,25 @@ final class HttpServer
     public function addStaticHandler(StaticHandler $handler): static {}
 
     /**
+     * Add a request rate limit rule (#414).
+     *
+     * A request over the limit of any rule it matches is answered
+     * `429 Too Many Requests` with `Retry-After`, and no handler runs; see
+     * {@see RateLimit}. A request a static mount serves is not counted. The
+     * rule is locked when added, so later setter calls on it throw.
+     *
+     * @throws HttpServerInvalidArgumentException when the rule's name is taken
+     *         or the server's rules would hold more than 2097152 buckets
+     * @throws HttpServerRuntimeException while the server is running
+     * @return static
+     */
+    public function addRateLimit(RateLimit $rule): static {}
+
+    /**
      * Add the WebSocket handler. Registering it is what turns WebSocket on —
-     * there is no separate switch to flip. (Note that
-     * {@see HttpServerConfig::enableWebSocket()} is an unimplemented stub that
-     * throws; do not call it.)
+     * there is no separate switch to flip, exactly like HTTP/2 and
+     * {@see HttpServer::addHttp2Handler()}. ({@see HttpServerConfig::enableWebSocket()}
+     * is only a legacy toggle and throws when passed true.)
      *
      * An HTTP handler is still required: start() refuses to come up without one,
      * and it is what answers the requests that are not upgrades.
@@ -1754,7 +2046,93 @@ final class HttpServer
     public function addWebSocketHandler(callable $handler): static {}
 
     /**
-     * Add HTTP/2 handler.
+     * Enable cross-worker rooms (pub/sub topics) on this server.
+     *
+     * A room is a topic that any code can publish to — the message fans out to
+     * every subscriber across all workers, over the same engine a WebSocket
+     * connection uses with {@see WebSocket::subscribe()}. This is the only way
+     * to allocate the room hub, and it must be called before start(); a build
+     * configured with --disable-websocket serves rooms the same way.
+     *
+     * @return static
+     */
+    public function enableRooms(): static {}
+
+    /**
+     * Publish a text message to a room, from the server side — no WebSocket
+     * connection required.
+     *
+     * Reaches every subscriber of $topic on every worker. Unlike
+     * {@see WebSocket::publish()} there is no sending connection, so nobody is
+     * excluded. $topic must be a concrete name (no `+` or `#` wildcards).
+     *
+     * @return array{served: int, posted: int, dropped: int, workers: int}
+     *         Per-call delivery breakdown: `served` local subscribers on the
+     *         calling worker, `posted` remote worker mailboxes that accepted the
+     *         copy, `dropped` full remote mailboxes that lost it (best-effort —
+     *         use send() / trySend() when a full mailbox must be retried instead
+     *         of dropped), `workers` threads attached to the hub at all. See
+     *         {@see Room::publish()} for what a zero `workers` means.
+     */
+    public function publish(string $topic, string $message, bool $binary = false): array {}
+
+    /**
+     * Reliable server-side send to a room, NON-BLOCKING. Parks a full target on
+     * the outbound queue for background retry and returns at once. See
+     * {@see Room::trySend()} for the full contract; this is the same without a
+     * {@see Room} handle.
+     *
+     * @param int|null $timeoutMs Retry deadline; null uses the configured default.
+     * @return bool True if delivered or parked; false if a target was left
+     *         unserved with nothing parked for it — the outbound queue is full,
+     *         this thread has none to park on, or the message reached nobody.
+     *         False does not mean nothing was delivered: see {@see Room::trySend()}.
+     */
+    public function trySend(string $topic, string $message, ?int $timeoutMs = null): bool {}
+
+    /**
+     * Reliable server-side send to a room, BLOCKING. Suspends the calling
+     * coroutine until delivered or the deadline passes, then THROWS. See
+     * {@see Room::send()} for the full contract; this is the same without holding
+     * a {@see Room} handle.
+     *
+     * @param int|null $timeoutMs Retry deadline; null uses the configured default.
+     * @return int Targets the message reached, always 1 or more: subscribers
+     *             served on the calling worker plus worker mailboxes that accepted
+     *             it. See {@see Room::send()} for what that number is and is not.
+     * @throws RoomDeliveryException if the deadline passed with a target still
+     *         full, the outbound queue was full, the call was made outside a
+     *         coroutine, or the message reached nobody.
+     */
+    public function send(string $topic, string $message, ?int $timeoutMs = null): int {}
+
+    /**
+     * Count the subscribers of a room across all workers (scatter/gather).
+     *
+     * Suspends the calling coroutine until every worker answers or $timeoutMs
+     * elapses; a worker that misses the deadline is left out of the sum. Called
+     * outside a coroutine it returns only the calling worker's count.
+     */
+    public function subscriberCount(string $topic, int $timeoutMs = 1000): int {}
+
+    /**
+     * Get a server-side handle to a room (topic), for publishing or counting
+     * from outside a WebSocket connection.
+     *
+     * $topic must be a concrete name (no `+` or `#` wildcards). The returned
+     * {@see Room} owns a reference to the topic hub, so it keeps publishing
+     * after this server is released. Minting one before start() enables rooms.
+     */
+    public function room(string $topic): Room {}
+
+    /**
+     * Add a handler for connections that speak HTTP/2.
+     *
+     * Takes precedence over {@see HttpServer::addHttpHandler()} on such a
+     * connection; a gRPC call registered through
+     * {@see HttpServer::addGrpcHandler()} still wins over both. Registered
+     * alone it also narrows the server-wide protocol mask to HTTP/2, so
+     * HTTP/1 traffic is refused.
      *
      * @param callable $handler HTTP/2 handler callback
      * @return static
@@ -1824,6 +2202,23 @@ final class HttpServer
     public function isRunning(): bool {}
 
     /**
+     * The listeners the server actually holds, one entry per configured
+     * listener, in configuration order.
+     *
+     * A listener configured with port 0 is bound to a port the kernel picks,
+     * and the entry carries that port: there is no gap between choosing an
+     * address and owning it, which a caller picking a free port beforehand
+     * cannot avoid. HTTP/3 listeners still require an explicit port and
+     * report the configured one.
+     *
+     * Empty while the server is not running: before start(), after stop().
+     *
+     * @return array<int, array{type: 'tcp'|'udp_h3', host: string, port: int, tls: bool}
+     *                  |array{type: 'unix', path: string}>
+     */
+    public function getBoundListeners(): array {}
+
+    /**
      * Whether the extension was built with HTTP/2 support (--enable-http2).
      */
     public static function isHttp2(): bool {}
@@ -1834,14 +2229,15 @@ final class HttpServer
     public static function isHttp3(): bool {}
 
     /**
-     * Get server telemetry.
+     * This server's counters and backpressure state. Under a worker pool each
+     * worker reports its own slot; getStats() sums the pool.
      *
      * @return array Telemetry data
      */
     public function getTelemetry(): array {}
 
     /**
-     * Reset telemetry counters.
+     * Reset this server's telemetry counters.
      *
      * @return bool True if reset successfully
      */
@@ -1867,29 +2263,64 @@ final class HttpServer
     public function getHttp3Stats(): array {}
 
     /**
-     * Snapshot of the server's own internal allocators and cross-worker topic
-     * traffic — the counters that let you attribute RSS growth to a concrete
-     * subsystem rather than guess.
+     * Snapshot of server-side arena/pool counters.
      *
-     *  - `conn_arena_live`       — http_connection_t slots in use (one per live
-     *                              TCP connection).
-     *  - `conn_arena_slots`      — total slots across all chunks; never shrinks.
-     *  - `conn_arena_chunks`     — slab chunks committed.
-     *  - `conn_arena_bytes`      — virtual commitment of those chunks.
-     *  - `body_pool`             — per-size-class LIFO of large request bodies
-     *                              (1 MB … 128 MB); each entry has `slot_bytes`,
-     *                              `count`, `bytes`.
-     *  - `body_pool_total_bytes` — sum of `bytes` across the classes.
-     *  - `ws_topic_posted`       — cross-worker publishes handed to another
-     *                              worker's mailbox.
-     *  - `ws_topic_skipped`      — workers a publish did NOT wake, because the
-     *                              interest filter proved they hold no
-     *                              subscriber. Large next to `posted` means the
-     *                              filter is earning its keep.
-     *  - `ws_topic_dropped`      — publishes a full worker mailbox refused. This
-     *                              one is data loss: a worker is not draining
-     *                              fast enough, or a client is flooding
-     *                              publishes ({@see HttpServerConfig::setWsPublishRateLimit()}).
+     * Reports memory committed by the server's own internal allocators
+     * (slab pools, per-thread caches) so a benchmark probe can attribute
+     * RSS growth to a concrete subsystem.
+     *
+     *  - `conn_arena_live`     — http_connection_t slots currently in
+     *                            use (one per live TCP connection).
+     *  - `conn_arena_slots`    — total slots across all chunks (live +
+     *                            free, never shrinks).
+     *  - `conn_arena_chunks`   — slab chunks committed. Each chunk
+     *                            holds CONN_ARENA_CHUNK_SLOTS (256)
+     *                            http_connection_t structs (~768 B each).
+     *  - `conn_arena_bytes`    — `chunks * CONN_ARENA_CHUNK_SLOTS *
+     *                            sizeof(http_connection_t)`, virtual
+     *                            commitment.
+     *  - `body_pool`           — per-size-class LIFO of large request
+     *                            bodies (1 MB to 128 MB). Each entry has
+     *                            `slot_bytes`, `count` (slots cached
+     *                            right now), `bytes` (`count *
+     *                            slot_bytes`).
+     *  - `body_pool_total_bytes` — sum of `bytes` across all classes.
+     *  - `ws_topic_posted`      — cross-worker publishes handed to another
+     *                             worker's mailbox.
+     *  - `ws_topic_skipped`     — workers a publish did NOT wake, because the
+     *                             interest filter proved they hold no
+     *                             subscriber. Large next to `posted` means the
+     *                             filter is earning its keep.
+     *  - `ws_topic_dropped`     — publishes a worker's mailbox would not take
+     *                             because it was full. This one is data loss:
+     *                             a worker is not draining fast enough, or a
+     *                             client is flooding publishes.
+     *  - `ws_bodies`            — message bodies allocated. One publish costs
+     *                             one, whatever it reaches: the body is shared
+     *                             by every subscriber and every worker it lands
+     *                             in. Growing faster than the publishes means a
+     *                             copy crept back into a delivery path.
+     *  - `ws_bodies_freed`      — and released. Bodies are persistent memory
+     *                             owned by whatever holds them — a mailbox, a
+     *                             receiver's ring, a parked retry — so a teardown
+     *                             that forgets to empty one of those leaks them.
+     *                             At rest, with nothing queued anywhere, this
+     *                             equals `ws_bodies`; a standing gap is that leak.
+     *  - `ws_sub_overflow`      — server-side receivers (see {@see Room::recv()})
+     *                             whose 64-message ring dropped its oldest
+     *                             because nobody was reading. Distinct from
+     *                             `ws_topic_dropped`: that is the transport
+     *                             giving up on a worker, this is a receiver too
+     *                             slow for itself. {@see Room::lostCount()}
+     *                             attributes it to one subscription.
+     *  - `ws_retry_queued`, `ws_retry_delivered`, `ws_retry_expired`,
+     *    `ws_retry_rejected`, `ws_retry_gone`, `ws_retry_shutdown` — the
+     *                             reliable path's ledger: parked targets, those
+     *                             a retry landed, those that ran out of
+     *                             deadline, sends the outbound queue refused,
+     *                             targets that had detached by the time a retry
+     *                             came round, and those a worker shutdown
+     *                             abandoned. See {@see Room::send()}.
      *
      * @return array
      */
@@ -1933,7 +2364,6 @@ final class HttpServer
  *
  * Instances are created internally by the server and passed to the
  * registered handler — never constructed from user code.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/http-request.html
  */
 final class HttpRequest
@@ -1962,7 +2392,14 @@ final class HttpRequest
      * Get all query parameters as an associative array.
      * Supports PHP array notation: foo[bar], foo[]
      *
+     * A query string over a limit is refused rather than cut, as a form body
+     * is: more pairs than max_input_vars, or a name nested deeper than
+     * max_input_nesting_level, makes this and getQueryParam() throw
+     * {@see HttpException} 400 on every call, and uncaught it answers the
+     * request with 400. $_GET keeps what fits instead. getPath() still works.
+     *
      * @return array<string, mixed>
+     * @throws HttpException 400 when the query string was refused.
      */
     public function getQuery(): array {}
 
@@ -1972,8 +2409,35 @@ final class HttpRequest
      * @param string $name  Parameter name
      * @param mixed  $default  Value to return when the parameter is absent (default: null)
      * @return mixed
+     * @throws HttpException 400 when the query string was refused (see getQuery()).
      */
     public function getQueryParam(string $name, mixed $default = null): mixed {}
+
+    /**
+     * Cookies of the request, keyed and decoded as PHP fills $_COOKIE, so the
+     * array can be handed to a framework that reads $_COOKIE:
+     *
+     * - `%XX` in a value is decoded and `+` stays `+` (rawurldecode());
+     *   names are taken as sent;
+     * - spaces and dots in a name become `_`, and `name[key]` builds an array;
+     * - of two cookies with the same plain name the first one sent wins:
+     *   a browser sends the cookie with the more specific path first.
+     *
+     * A header with more cookies than max_input_vars keeps the first
+     * max_input_vars of them; the request is not refused. The Cookie header
+     * as sent is getHeader('cookie').
+     *
+     * @return array<string, string|array>
+     */
+    public function getCookies(): array {}
+
+    /**
+     * One cookie from getCookies(), looked up by its key as stored there:
+     * a cookie sent as `a.b` is read as `a_b`.
+     *
+     * @param mixed $default Returned when there is no such cookie.
+     */
+    public function getCookie(string $name, mixed $default = null): mixed {}
 
     /**
      * Get HTTP version string (e.g., "1.1").
@@ -2007,7 +2471,8 @@ final class HttpRequest
 
     /**
      * Get request body.
-     * Returns empty string if no body.
+     * Returns empty string if no body. A multipart body is not kept on HTTP/1
+     * and HTTP/2: its parts go to {@see getPost()} and {@see getFiles()}.
      */
     public function getBody(): string {}
 
@@ -2043,16 +2508,49 @@ final class HttpRequest
     public function getRemotePort(): ?int {}
 
     /**
-     * Get POST data from multipart/form-data or application/x-www-form-urlencoded.
-     * Supports PHP-style arrays: name[], user[name], matrix[0][1]
+     * True when the request arrived over TLS: an HTTPS listener on HTTP/1.1
+     * or HTTP/2, and every HTTP/3 request — the shape of `$_SERVER['HTTPS']`.
+     *
+     * This is the transport of the connection. It does NOT read
+     * X-Forwarded-Proto or Forwarded: behind a TLS-terminating proxy it is
+     * false, and trusting those headers is the application's decision.
+     */
+    public function isSecure(): bool {}
+
+    /**
+     * Form fields of an application/x-www-form-urlencoded or multipart/form-data body.
+     *
+     * Keys follow PHP's rules for $_POST: name[] appends, user[name] and
+     * matrix[0][1] nest, and a `.` or a space in the base name becomes `_`.
+     * Empty for any other Content-Type.
+     *
+     * A form over a limit is refused rather than shortened. A body past
+     * {@see HttpServerConfig::setMaxBodySize()} is refused by the transport:
+     * HTTP/1 answers 413 before the handler runs; on HTTP/2 and HTTP/3 the
+     * handler, already running, is cancelled with {@see HttpException} 413,
+     * every read of the body throws it, and uncaught it answers the client
+     * 413. More multipart fields than max_input_vars, or a malformed multipart
+     * body, is refused with 400 where the parser meets it: HTTP/1 answers
+     * before the handler runs, and HTTP/2 answers 400 as for an oversized body.
+     * HTTP/3 buffers the body and parses it in this getter, so there, as for
+     * an url-encoded form past max_input_vars or a name nested deeper than
+     * max_input_nesting_level on every transport, this getter throws
+     * HttpException 400, and so does every later form getter; uncaught, it
+     * answers the request with 400. The body itself stays readable then.
+     *
+     * Over HTTP/2 and HTTP/3 the handler starts before the body has arrived, so
+     * this call suspends until it has, as {@see awaitBody()} does. A form body
+     * does not stream even with {@see HttpServerConfig::setBodyStreamingEnabled()},
+     * and reading it with {@see readBody()} leaves the form in place.
      *
      * @return array
      */
     public function getPost(): array {}
 
     /**
-     * Get all uploaded files.
-     * Multiple files with same name: ['photos' => [UploadedFile, UploadedFile, ...]]
+     * Uploaded files of a multipart/form-data body, keyed as in {@see getPost()}:
+     * ['avatar' => UploadedFile, 'photos' => [UploadedFile, ...], 'docs' => ['cv' => UploadedFile]].
+     * Waits for the body, and is refused, as getPost() is.
      *
      * @return array
      */
@@ -2060,7 +2558,8 @@ final class HttpRequest
 
     /**
      * Get single uploaded file by name.
-     * For multiple files (photos[]), returns first one.
+     * For an array of files (photos[], docs[cv]), returns the first file directly
+     * in it; deeper arrays are read through {@see getFiles()}.
      *
      * @param string $name Field name
      * @return UploadedFile|null File object or null if not found
@@ -2127,17 +2626,23 @@ final class HttpRequest
     /**
      * Read the next chunk of a streamed request body (issue #26).
      *
-     * Used when request-body streaming is enabled via
-     * {@see HttpServerConfig::setBodyStreamingEnabled()}: the handler is
-     * invoked as soon as headers are parsed and pulls the body
-     * incrementally instead of having it buffered into getBody().
+     * Pulls one chunk from the per-request queue produced by the H1/H2
+     * parsers when HttpServerConfig::setBodyStreamingEnabled(true) was
+     * set at server start. Suspends the current coroutine until a chunk
+     * is available, then returns a non-empty string. Returns null
+     * idempotently at end of stream.
      *
-     * Suspends the current coroutine until at least one byte is
-     * available, then returns up to $maxLen bytes. Returns null once the
-     * body has been fully consumed (end of stream).
+     * Each call returns exactly one parser-supplied chunk (an H2 DATA
+     * frame payload or one llhttp on_body slice). $maxLen is reserved
+     * for a future coalescing optimisation and is ignored today.
      *
-     * @param int $maxLen Maximum number of bytes to return (default 65536).
+     * @param int $maxLen Maximum bytes to return (default 65536).
      * @return string|null Next chunk, or null at end of stream.
+     * @throws HttpException with the status of a refusal on HTTP/2 or HTTP/3:
+     *         413 past {@see HttpServerConfig::setMaxBodySize()}, 400 for a
+     *         refused multipart body. A read already parked here wakes with it.
+     * @throws \Exception if the body stream broke otherwise (a peer reset, a
+     *         lost connection).
      */
     public function readBody(int $maxLen = 65536): ?string {}
 
@@ -2175,7 +2680,6 @@ final class HttpRequest
  *
  * Instances are created internally by the server and passed to the
  * registered handler — never constructed from user code.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/http-response.html
   * @link https://true-async.github.io/en/docs/server/sse.html SSE guide
  */
@@ -2191,7 +2695,15 @@ final class HttpResponse
     /**
      * Set response status code.
      *
-     * @param int $code HTTP status code (100-599)
+     * Takes 200 to 599. An interim status (1xx) throws: RFC 9110 §15.2 makes
+     * it a response the client reads and then goes on waiting for the final
+     * one, which a handler has no way to send afterwards.
+     *
+     * A status that carries no content changes what the body calls do. 204,
+     * 304 and 205 refuse a streaming call and drop a buffered body; 205 states
+     * Content-Length: 0, the other two state no length at all.
+     *
+     * @param int $code HTTP status code (200-599)
      * @return static
      */
     public function setStatusCode(int $code): static {}
@@ -2203,6 +2715,12 @@ final class HttpResponse
 
     /**
      * Set response reason phrase.
+     *
+     * The phrase sits on the HTTP/1 status line, where RFC 9112 §4 allows
+     * HTAB, SP, VCHAR and obs-text and nothing else. Every other byte is
+     * replaced with a space: a CR or an LF would end the status line early and
+     * let the rest be read as header fields. HTTP/2 and HTTP/3 carry no reason
+     * phrase and ignore this.
      *
      * @param string $phrase Reason phrase (e.g., "OK", "Not Found")
      * @return static
@@ -2218,6 +2736,32 @@ final class HttpResponse
 
     /**
      * Set header (replaces existing).
+     *
+     * Content-Length is the one header the server reads back: set before the
+     * first write() it declares the length of a streamed body (see write()),
+     * and on a buffered body the server states the count it is sending.
+     *
+     * Two fields answer differently, because the server states them itself.
+     * Connection is read rather than copied: "close" retires the connection
+     * after this response on HTTP/1 — the field is not copied onto the wire,
+     * the socket is closed — while HTTP/2 and HTTP/3 multiplex, so one response
+     * never retires their connection and the request is recorded and unused
+     * there. "keep-alive" is dropped, being what the server was going to say
+     * anyway; any other value throws. Transfer-Encoding accepts only "chunked",
+     * the framing an undeclared HTTP/1.1 stream gets anyway, and is dropped;
+     * naming any other coding throws, because the server cannot apply it and
+     * would otherwise send encoded bytes with nothing declaring them.
+     *
+     * getHeader() reports neither afterwards: what the server states is not
+     * part of the handler's header set. resetHeaders() takes back a close.
+     *
+     * Throws {@see HttpServerInvalidArgumentException} when the name is not an
+     * RFC 9110 §5.6.2 token, or the value carries a byte that cannot stand in a
+     * field value — a CR or an LF would end the header block and let the rest
+     * be read as a second response — or the value has leading or trailing
+     * whitespace, which §5.5 forbids a sender to generate. The bytes checked
+     * are the bytes stored, so a value given as an object is checked after its
+     * __toString(). Nothing is stored when it throws.
      *
      * @param string $name Header name
      * @param string|array $value Header value(s)
@@ -2320,65 +2864,138 @@ final class HttpResponse
     // === Body methods ===
 
     /**
-     * Write data to response body buffer.
+     * Stream a chunk to the client.
      *
-     * @param string $data Data to write
-     * @return static
+     * The first call commits status and headers; afterwards setStatusCode(),
+     * setHeader() and setBody() throw. Later calls append chunked-transfer
+     * segments (HTTP/1.1) or DATA frames (HTTP/2, HTTP/3). To append to a
+     * buffered body instead, call appendBody().
+     *
+     * A Content-Length set before this first call frames the body instead of
+     * chunks, and the server then holds the body to it: a chunk that would
+     * pass the declared count throws HttpServerRuntimeException and is not
+     * queued, and a body that ends short of it is failed rather than finished.
+     * Such a response is never compressed.
+     *
+     * An HTTP/1.0 client gets neither: it has no chunked decoder, so an
+     * undeclared body reaches it as its own bytes with Connection: close, and
+     * the close is the boundary. The connection carries that one response.
+     *
+     * A status that carries no body — 204, 304, 205 — throws
+     * HttpServerRuntimeException here, while the response is still uncommitted
+     * and can still be given a status that does carry one. A HEAD request is
+     * the exception: the chunk is accepted and dropped, and the response stays
+     * uncommitted, so setHeader() and setStatusCode() go on working and an
+     * uncaught exception still becomes the status. What the dropped chunk does
+     * change is the length: the server states none, because a count taken from
+     * the buffer nobody filled would claim the GET body is empty. Set a
+     * Content-Length to state the length a GET would report.
+     *
+     * Parks the handler coroutine only under backpressure: HTTP/2 and HTTP/3
+     * park while every ring slot is live or the queued bytes stand at
+     * HttpServerConfig::setStreamWriteBufferBytes (256 KiB by default),
+     * HTTP/1 parks on the socket write. tryWrite() offers a chunk without
+     * committing to that wait. A peer that has gone throws HttpException 499.
      */
-    public function write(string $data): static {}
+    public function write(string $chunk): static {}
 
     /**
-     * Send a chunk to the client (streaming response).
+     * Removed. One bool answered four questions, and a loop that read it as
+     * liveness stopped streams that were merely slow.
      *
-     * First call commits status + headers (they can no longer be
-     * changed). Subsequent calls append DATA frames (HTTP/2) or
-     * chunked-transfer segments (HTTP/1).
+     * Ask the two questions separately: isWritable() reports whether output is
+     * still possible, tryWrite() and awaitWritable() report whether the
+     * outbound queue has room.
      *
-     * Blocks the handler coroutine ONLY under backpressure — when the
-     * per-stream staging buffer is full (HTTP/2: all ring slots live
-     * OR queued bytes reach HttpServerConfig::setStreamWriteBufferBytes,
-     * default 256 KiB). Otherwise returns immediately. send() is always
-     * safe to call; use sendable() to check first if you'd rather do
-     * other work than block.
+     * The declaration stays for one minor release so a call names its
+     * replacements instead of failing as an undefined method.
      *
-     * @param string $chunk
-     * @return static
-     */
-    public function send(string $chunk): static {}
-
-    /**
-     * Advisory, non-blocking backpressure check for streaming responses.
-     *
-     * Returns true when send() would accept a chunk without suspending
-     * the handler coroutine — the per-stream staging buffer has room.
-     * Returns false when send() would block on backpressure, or when the
-     * response is closed / sealed by sendFile() / not streaming-capable.
-     *
-     * send() is always safe to call regardless; sendable() just lets a
-     * handler do other work instead of blocking on a slow peer.
-     *
-     * @return bool
+     * @throws HttpServerRuntimeException always
      */
     public function sendable(): bool {}
+
+    /**
+     * Offer a chunk without waiting for room: false means the outbound queue
+     * had no room and nothing was queued, so the same chunk can be offered
+     * again later. The transport answers at the moment of queueing, not from
+     * a predicate read beforehand, so nothing slips in between.
+     *
+     * A client that has gone is not reported as false — it throws
+     * HttpException 499, because "wait" and "stop" need opposite reactions.
+     * The refused chunk is a slice of one byte stream, so dropping it corrupts
+     * the body: retry it, or stop.
+     *
+     * HTTP/1 is the exception, and it is not a small one: that transport keeps
+     * no queue of its own, so it never refuses AND an accepted chunk waits for
+     * the socket for as long as a blocking write() would — up to the write
+     * timeout. A handler
+     * that must not be parked has to check getProtocolVersion(). Over HTTP/2,
+     * HTTP/3 and the worker pool neither happens.
+     */
+    public function tryWrite(string $chunk): bool {}
+
+    /**
+     * Wait until the outbound queue has room again, and report whether it has.
+     *
+     * The companion to tryWrite(): that call says "not now", this one waits for
+     * "now" instead of spinning. The wait belongs to the transport, which keeps
+     * its own deadline and re-pumps its drain on each wake.
+     *
+     * True at once on HTTP/1, which keeps no queue and so has nothing to wait
+     * for. False without waiting on a transport that can be full but offers no
+     * wait — better than "go ahead", which would spin a handler that trusts it.
+     * A timeout or a cancellation arrives as an exception; false after a wait
+     * means the queue is still full.
+     *
+     * @param int|null $timeoutMs Milliseconds to wait. The shorter of this and
+     *                            the connection's write timeout bounds the
+     *                            wait; null leaves that timeout as the only
+     *                            bound.
+     */
+    public function awaitWritable(?int $timeoutMs = null): bool {}
+
+    /**
+     * True while output is still possible: end() was not called, the response
+     * is not sealed by sendFile(), and the client has not gone.
+     *
+     * A false answer is final: stop a streaming loop on !isWritable(). For the
+     * separate question of room in the outbound queue, use tryWrite() or
+     * awaitWritable().
+     */
+    public function isWritable(): bool {}
 
     // === Server-Sent Events ===
 
     /**
-     * Put the response into SSE mode: status and headers are committed
-     * (`Content-Type: text/event-stream`) and may no longer change.
+     * Switch the response into Server-Sent Events mode and lock the headers.
      *
-     * Calling this is optional — the first sseEvent()/sseComment()/sseRetry()
-     * starts the stream by itself. And note that sseStart() alone does NOT put
-     * the headers on the wire: the commit is lazy, and happens on the first
-     * record (or, if none is ever sent, as an empty `200 text/event-stream` when
-     * the response ends). To open the stream eagerly — to unblock the browser's
-     * `onopen` before any real event exists — send an initial {@see sseComment()},
-     * the conventional `:\n\n` prelude, which flushes the headers immediately.
+     * Sets the three canonical SSE headers — `Content-Type:
+     * text/event-stream`, `Cache-Control: no-cache, no-transform` and
+     * `X-Accel-Buffering: no` (the last tells nginx not to buffer the
+     * response; without it events stall behind the proxy buffer until it
+     * fills) — and marks the response as not-compressible (a buffering
+     * gzip stream would defeat real-time delivery). The response then
+     * enters streaming mode exactly as the first {@see self::write()} would:
+     * status + headers are committed and may no longer change, but no event
+     * data is emitted until the first sseEvent()/sseComment().
      *
-     * @throws HttpServerInvalidArgumentException if the handler already set a
-     *         Content-Type other than text/event-stream.
-     * @throws HttpServerRuntimeException if the response is already streaming,
-     *         closed, or has no connection to stream over.
+     * Calling sseStart() is optional — the first sseEvent()/sseComment()
+     * starts the stream implicitly. Note that sseStart() alone does NOT
+     * flush the status line / headers onto the wire: the commit is lazy and
+     * happens on the first sseEvent()/sseComment()/sseRetry() (or, if none
+     * is ever sent, an empty `200 text/event-stream` is flushed when the
+     * response ends). To open the stream eagerly — e.g. to unblock the
+     * browser's `onopen` before any real event is ready — send an initial
+     * `sseComment()` (the conventional `:\n\n` prelude), which both starts
+     * the stream and puts the headers on the wire immediately.
+     *
+     * Throws {@see HttpServerInvalidArgumentException} if the handler has
+     * already set a Content-Type other than `text/event-stream`, and
+     * {@see HttpServerRuntimeException} if the response is already
+     * streaming, closed, has no connection to stream over, or carries a status
+     * that ends at the header block (1xx, 204, 304), where an event stream has
+     * no body to put its records in.
+     *
      * @return static
      */
     public function sseStart(): static {}
@@ -2411,6 +3028,31 @@ final class HttpResponse
         ?string $id = null,
         ?int $retry = null
     ): static {}
+
+    /**
+     * Dispatch one SSE event without waiting for room.
+     *
+     * The non-blocking twin of sseEvent(): the same record, the same field
+     * validation, the same start of the stream on the first call. False means
+     * the outbound queue is full — the record was not queued and no header was
+     * committed, so the same event may be offered again. A peer that is gone
+     * throws the 499 exception instead, as tryWrite() does. All four arguments
+     * null is a no-op and answers true.
+     *
+     * HTTP/1 never refuses: it keeps no queue of its own, so an accepted record
+     * waits for the socket as a blocking one would.
+     *
+     * @param string|null $data  Message payload. Multiline strings are split.
+     * @param string|null $event Event name (matched by addEventListener()).
+     * @param string|null $id    Event id — echoed as Last-Event-ID on reconnect.
+     * @param int|null    $retry Reconnect delay hint in milliseconds.
+     */
+    public function trySseEvent(
+        ?string $data = null,
+        ?string $event = null,
+        ?string $id = null,
+        ?int $retry = null
+    ): bool {}
 
     /**
      * Send an SSE comment — a record beginning with `:`.
@@ -2454,16 +3096,36 @@ final class HttpResponse
     public function setGrpcEncoding(string $encoding): static {}
 
     /**
-     * Frame and stream one gRPC message: the 5-byte length prefix is prepended
-     * for you. The first call activates streaming, exactly as send() does — so
-     * call it once for a unary reply and repeatedly for server-streaming.
+     * Frame and stream one gRPC message.
      *
-     * Pass already-protobuf-encoded bytes. The grpc-status travels separately, on
-     * {@see setTrailer()}, and defaults to 0 when unset.
+     * Prepends the 5-byte gRPC length prefix to $message and streams it as
+     * a single gRPC message. Activates streaming mode on the first call,
+     * exactly like write(). Call once for a unary reply, repeatedly for
+     * server-streaming. Pass the already protobuf-encoded bytes; the
+     * grpc-status is carried separately via setTrailer() (defaults to 0
+     * when unset). Compressed automatically when setGrpcEncoding('gzip')
+     * was declared.
      *
+     * @param string $message Protobuf-encoded message bytes.
      * @return static
      */
     public function writeMessage(string $message): static {}
+
+    /**
+     * Frame and stream one gRPC message without waiting for room.
+     *
+     * The non-blocking twin of writeMessage(): the same framing, the same
+     * declared grpc-encoding, the same switch into streaming mode on the first
+     * call. False means the outbound queue is full — nothing was queued and no
+     * header was committed, so the same message may be offered again. A peer
+     * that is gone throws the 499 exception instead, as tryWrite() does.
+     *
+     * HTTP/1 never refuses: it keeps no queue of its own, so an accepted
+     * message waits for the socket as a blocking one would.
+     *
+     * @param string $message Protobuf-encoded message bytes.
+     */
+    public function tryWriteMessage(string $message): bool {}
 
     /**
      * Mark this response as ineligible for compression. Overrides every
@@ -2484,26 +3146,17 @@ final class HttpResponse
 
     /**
      * Set body content (replaces buffer).
-     *
-     * @param string $body Body content
-     * @return static
      */
     public function setBody(string $body): static {}
 
     /**
-     * Get body stream.
+     * Append to the buffered response body.
      *
-     * @return mixed Stream resource or null
+     * Nothing reaches the client here: the whole body goes out on end(), with
+     * Content-Length computed from it. Call write() to stream instead — that
+     * is the call which commits headers and applies backpressure.
      */
-    public function getBodyStream(): mixed {}
-
-    /**
-     * Set body stream.
-     *
-     * @param mixed $stream Stream resource
-     * @return static
-     */
-    public function setBodyStream(mixed $stream): static {}
+    public function appendBody(string $data): static {}
 
     // === Helper methods ===
 
@@ -2570,6 +3223,36 @@ final class HttpResponse
     public function end(?string $data = null): void {}
 
     /**
+     * Finish a started stream as failed, so the client can tell a body that
+     * stopped from a body that finished.
+     *
+     * HTTP/1 writes no terminating chunk and loses the connection — chunked
+     * framing has no other way to say it, and curl reports CURLE_PARTIAL_FILE.
+     * HTTP/2 sends RST_STREAM and HTTP/3 resets the stream, leaving the rest of
+     * the connection alone.
+     *
+     * $errorCode is the reset code of whichever protocol carries the response,
+     * and it does not travel between them: HTTP/2 and HTTP/3 number the same
+     * conditions differently, and HTTP/1 has no field for one. Omitted, each
+     * transport uses its own INTERNAL_ERROR.
+     *
+     * A response that never started streaming has nothing to disown and is left
+     * alone: the exception the handler is carrying goes on to become the
+     * status. A stream started with nothing yet on the wire is finished
+     * cleanly instead — the client gets the empty response the transport
+     * commits for it. Calling abort() twice is a no-op for the same reason
+     * neither of those throws: its place is a catch block, where a method that
+     * throws buries the handler's own error.
+     *
+     * @param int|null $errorCode Protocol reset code, 0..4294967295. Omitted:
+     *                             the transport's own INTERNAL_ERROR.
+     * @throws HttpServerRuntimeException if end() has already told the client
+     *         the body is whole.
+     * @throws HttpServerInvalidArgumentException if $errorCode is out of range.
+     */
+    public function abort(?int $errorCode = null): void {}
+
+    /**
      * Send a file as the response body. Defers actual transmission to
      * the dispose phase — this method records the path + options on
      * the response and returns immediately.
@@ -2594,9 +3277,13 @@ final class HttpResponse
     public function isHeadersSent(): bool {}
 
     /**
-     * Check if response is closed.
+     * True once the response has been finished, by end() or by abort().
+     *
+     * Reports the response, not the connection: a peer that has gone leaves
+     * this false until the handler finishes the response. Use isWritable() for
+     * liveness.
      */
-    public function isClosed(): bool {}
+    public function isEnded(): bool {}
 }
 
 // ---------------------------------------------------------------------------
@@ -2607,7 +3294,6 @@ final class HttpResponse
  * One fully-reassembled message, as handed back by {@see WebSocket::recv()}.
  * Text messages were UTF-8 validated by the framing layer, so `$data` can be
  * used as-is — there is nothing left to re-check.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketMessage
@@ -2644,7 +3330,6 @@ final class WebSocketMessage
  *
  * Once the handshake commits, every method here throws — Sec-WebSocket-Protocol
  * is already on the wire and a subprotocol cannot be unsaid.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
  */
 final class WebSocketUpgrade
@@ -2710,7 +3395,6 @@ final class WebSocketUpgrade
  * - close() is idempotent and callable from anywhere.
  *
  * `foreach ($ws as $msg)` is the recv() loop written the other way round.
-  *
   * @link https://true-async.github.io/en/docs/reference/server/websocket.html
   * @link https://true-async.github.io/en/docs/server/websocket.html WebSocket guide
  */
@@ -2869,21 +3553,24 @@ final class WebSocket implements \Iterator
      * Publish a text message to a topic, on every worker.
      *
      * Never suspends: a peer whose outbound queue is backed up drops the message
-     * rather than stalling delivery to the rest of the topic — trySend semantics.
-     * When you need a delivery guarantee, send() to the one connection.
+     * rather than stalling delivery to the rest of the topic (trySend
+     * semantics). Use send() on a single connection when you need delivery
+     * guarantees.
      *
-     * A subscriber matched by several of its own filters still receives one copy.
+     * A subscriber matched by several of its own filters still receives one
+     * copy.
      *
-     * @param string $topic A concrete topic. Wildcards are rejected: a message
-     *        fanned out to a pattern has no well-defined destination.
+     * @param string $topic Concrete topic — wildcards are rejected, because a
+     *        message fanned out to a pattern has no well-defined destination.
      * @param bool $excludeSelf Skip this connection — the "everyone but the
-     *        sender" case a chat wants.
-     * @return int Subscribers served on the CALLING worker. Delivery to the other
-     *         workers is asynchronous and cannot be counted here, so this is a
-     *         local number, not a process-wide one.
+     *        sender" case that a chat wants.
+     * @return int Subscribers served on the CALLING worker — connections and
+     *         server-side receivers alike. Delivery to the other workers is
+     *         asynchronous and cannot be counted here, so this is a local
+     *         number, not a process-wide one.
      * @throws WebSocketException on a malformed topic, or one carrying a wildcard.
      * @throws WebSocketBackpressureException when the connection is over its
-     *         {@see HttpServerConfig::setWsPublishRateLimit()}.
+     *         HttpServerConfig::setWsPublishRateLimit(). The connection stays up.
      */
     public function publish(string $topic, string $text, bool $excludeSelf = true): int {}
 
@@ -2893,12 +3580,14 @@ final class WebSocket implements \Iterator
     public function publishBinary(string $topic, string $data, bool $excludeSelf = true): int {}
 
     /**
-     * How many connections across all workers a publish to $topic would reach,
-     * wildcard subscribers included.
+     * Subscribers across all workers that a publish to $topic would reach — a
+     * WebSocket connection, or a server-side receiver that called
+     * {@see Room::subscribe()} — including those subscribed through a wildcard
+     * that matches it.
      *
      * Each worker answers with its own count and the answers are summed, so this
      * is a snapshot rather than a live number: a worker that does not answer in
-     * time is simply left out.
+     * time is left out.
      */
     public function subscriberCount(string $topic): int {}
 
@@ -2911,6 +3600,184 @@ final class WebSocket implements \Iterator
     public function next(): void {}
     public function rewind(): void {}
     public function valid(): bool {}
+}
+
+// ---------------------------------------------------------------------------
+// Rooms
+// ---------------------------------------------------------------------------
+
+/**
+ * A server-side handle to a room (a pub/sub topic), obtained from
+ * {@see HttpServer::room()}.
+ *
+ * Publishing through it reaches every subscriber of the topic across all
+ * workers — a coroutine that called {@see Room::subscribe()}, or, in a build
+ * with WebSocket, a connection that called `WebSocket::subscribe()` — with no
+ * sending connection, so nobody is excluded. A room needs no connection at all:
+ * a background producer can push into one, and a build configured with
+ * --disable-websocket serves rooms the same way.
+ *
+ * A handle owns a reference to the topic hub, so it keeps publishing after the
+ * {@see HttpServer} that minted it is released.
+ *
+ */
+final class Room
+{
+    /* Rooms are minted by HttpServer::room(), never with `new`. */
+    private function __construct() {}
+
+    /**
+     * Publish a text message to this room (best-effort, no retry).
+     *
+     * @return array{served: int, posted: int, dropped: int, workers: int}
+     *         Per-call delivery breakdown: `served` local subscribers on the
+     *         calling worker, `posted` remote worker mailboxes that accepted the
+     *         copy, `dropped` full remote mailboxes that lost it, `workers`
+     *         threads attached to this room's hub at all. Delivery to other
+     *         workers is asynchronous, so `served` is a local count, not a total.
+     *
+     *         `workers` is what tells a publish that reached nobody why: 0 means
+     *         nothing was running to receive it and no later attach can rescue
+     *         this message; a non-zero `workers` with served+posted == 0 means
+     *         the workers are there and the room is simply empty.
+     */
+    public function publish(string $message): array {}
+
+    /**
+     * Publish a binary message to this room.
+     *
+     * @return int Subscribers served on the calling worker.
+     */
+    public function publishBinary(string $data): int {}
+
+    /**
+     * Reliable send, NON-BLOCKING. Fans out now; for every target whose mailbox
+     * is full, parks a retry entry on this worker's outbound queue and returns at
+     * once — a background drainer retries it up to the deadline. Unlike
+     * {@see publish()}, nothing is silently dropped, and the caller gets an
+     * immediate, honest answer.
+     *
+     * @param int|null $timeoutMs How long the background drainer keeps retrying a
+     *        still-full target. Null uses
+     *        {@see HttpServerConfig::setWsPublishRetryTimeoutMs()}.
+     * @return bool True if delivered outright or parked for retry; false if some
+     *         target was left unserved and nothing was parked for it — the
+     *         outbound queue is at {@see HttpServerConfig::setWsPublishRetryQueueMax()},
+     *         or this thread has no outbound queue to park on, or the message
+     *         reached nobody at all (no worker attached, or nobody subscribed).
+     *
+     *         False is NOT a promise that nothing was delivered: the fan-out runs
+     *         before the refusal, so the fast targets may already hold the
+     *         message and a re-send duplicates on them. The eventual outcome of a
+     *         PARKED message is in {@see HttpServer::getRuntimeStats()}.
+     */
+    public function trySend(string $message, ?int $timeoutMs = null): bool {}
+
+    /**
+     * Reliable send, BLOCKING. Same fan-out-and-park as {@see trySend()}, but the
+     * calling coroutine awaits the parked message's completion: it returns the
+     * number of targets delivered to once every target lands, or THROWS if the
+     * deadline passes with a target still full (or the queue was full at enqueue).
+     * The caller either knows it landed or catches the failure.
+     *
+     * A target that detached while we waited — its slot reused by a fresh worker —
+     * is skipped rather than mis-delivered, and does not by itself fail the send.
+     *
+     * Must run in a coroutine (it suspends). Because it blocks, use it for
+     * point-to-point coordination, NOT for a fan-out to many dashboards — that is
+     * what {@see publish()} is for.
+     *
+     * On failure the message may already have reached a subset of targets (the
+     * fast ones are posted during fan-out, before any verdict); the thrown
+     * exception carries how many landed, so re-sending — which duplicates on those
+     * — is a decision, not an accident.
+     *
+     * A send that reaches NOBODY throws rather than returning 0: on this path a
+     * message that arrived nowhere is a failure, and the two reasons — nothing is
+     * running, or nobody has joined the room — are told apart by the message,
+     * because they are fixed differently. Use {@see publish()} for a message that
+     * may legitimately reach no one.
+     *
+     * A cancellation of the calling coroutine says nothing about the message: it
+     * stays on the retry queue until it lands or expires, and its outcome is then
+     * only in {@see HttpServer::getRuntimeStats()}. Re-sending in a cancellation
+     * handler duplicates.
+     *
+     * @param int|null $timeoutMs Retry deadline; null uses
+     *        {@see HttpServerConfig::setWsPublishRetryTimeoutMs()}.
+     * @return int Targets the message reached, always 1 or more: subscribers
+     *             served on the calling worker plus worker mailboxes that accepted
+     *             it. Not a subscriber census and not comparable between senders —
+     *             a remote worker is one target however many subscribers sit
+     *             behind it, and a mailbox that accepted the message can still
+     *             drop it on a full ring (`ws_sub_overflow`).
+     * @throws RoomDeliveryException if the deadline passed with a target still
+     *         full, or the outbound queue was full at enqueue, or send() was
+     *         called outside a coroutine (use trySend() there), or the message
+     *         reached nobody.
+     */
+    public function send(string $message, ?int $timeoutMs = null): int {}
+
+    /**
+     * Join this room in the CALLING thread, so {@see recv()} can take messages
+     * published to it — by another thread, another worker, or a WebSocket peer.
+     *
+     * Attaches this thread to the topic machinery if nobody did yet. Idempotent
+     * per handle. A subscription belongs to one thread and is never carried by a
+     * transfer: a room handed to a {@see \Async\ThreadPool} task arrives
+     * unsubscribed, and the task subscribes for itself.
+     */
+    public function subscribe(): void {}
+
+    /**
+     * Leave this room in the calling thread. The thread stays attached — other
+     * rooms of the same server go on receiving.
+     */
+    public function unsubscribe(): void {}
+
+    /**
+     * Take the next message, or wait for one.
+     *
+     * Returns null when $timeoutMs passes with nothing to take, or at once when
+     * called outside a coroutine with nothing queued. Binary and text messages
+     * both come back as a string — the WebSocket frame type says nothing to a
+     * server-side consumer.
+     *
+     * @param int|null $timeoutMs Deadline in milliseconds. null waits without
+     *        one; 0 (or a negative, which is what an expired computed deadline
+     *        comes out as) takes whatever is already queued and returns.
+     * @throws HttpServerRuntimeException if this thread never subscribed, if
+     *         another coroutine is already parked on this room, or if the
+     *         subscription closed while parked.
+     */
+    public function recv(?int $timeoutMs = null): ?string {}
+
+    /**
+     * Messages this room's queue dropped because it was full.
+     *
+     * Monotonic for the lifetime of this handle, across unsubscribe/subscribe:
+     * snapshot it around a drain and compare. A publisher is never blocked by a
+     * slow consumer, so a receiver that falls behind loses the oldest messages —
+     * this is how it finds out. Whatever is still queued when a subscription
+     * ends is discarded and does NOT count here.
+     */
+    public function lostCount(): int {}
+
+    /**
+     * Count the subscribers of this room across all workers (scatter/gather).
+     *
+     * Suspends the calling coroutine until every worker answers or $timeoutMs
+     * elapses. Must run on a worker thread (a request/WebSocket handler or a
+     * spawned run coroutine); on the pool parent it returns the local count.
+     *
+     * A thread that never attached to the hub — a ThreadPool task the room was
+     * transferred into — gets 0, which reads the same as a room nobody joined.
+     * {@see trySend()} and {@see send()} report that thread honestly; this does not.
+     */
+    public function subscriberCount(int $timeoutMs = 1000): int {}
+
+    /** This room's topic name. */
+    public function name(): string {}
 }
 
 // ---------------------------------------------------------------------------

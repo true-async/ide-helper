@@ -46,7 +46,7 @@ final class Thread implements Completable
      *
      * @return T
      */
-    public function getResult() {}
+    public function getResult(): mixed {}
 
     /**
      * Returns the thread exception when finished.

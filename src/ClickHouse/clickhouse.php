@@ -9,7 +9,7 @@
  * analysers (PHPStan, Psalm) can resolve the classes the extension registers.
  *
  * @since      8.6
- * @version    0.7.1
+ * @version    1.0.0
  * @link       https://github.com/true-async/php-clickhouse
  */
 

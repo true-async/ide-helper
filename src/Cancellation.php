@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Provides IDE-level type information for the `async` PHP extension.
  *
  * @since      8.6
- * @version    0.7.1
+ * @version    1.0.0
  * @link       https://github.com/true-async/php-async
  */
 namespace {

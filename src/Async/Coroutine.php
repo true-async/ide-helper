@@ -39,7 +39,7 @@ final class Coroutine implements Completable
      *
      * @return T
      */
-    public function getResult() {}
+    public function getResult(): mixed {}
 
     /**
      * Return the exception that terminated the coroutine, or null if it has

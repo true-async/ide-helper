@@ -49,7 +49,7 @@ final class Pool implements \Countable, CircuitBreaker
      * @throws PoolException If the pool is closed or the timeout expires.
      * @throws ServiceUnavailableException
      */
-    public function acquire(int $timeout = 0) {}
+    public function acquire(int $timeout = 0): mixed {}
 
     /**
      * Try to acquire a resource without blocking.
@@ -58,7 +58,7 @@ final class Pool implements \Countable, CircuitBreaker
      * @throws PoolException If the pool is closed or the timeout expires.
      * @throws ServiceUnavailableException
      */
-    public function tryAcquire() {}
+    public function tryAcquire(): mixed {}
 
     /**
      * Release a resource back to the pool.
@@ -66,7 +66,8 @@ final class Pool implements \Countable, CircuitBreaker
      * If `$beforeRelease` returns false, the resource is destroyed instead.
      *
      * @param TResource $resource The resource to release.
-     * @throws PoolException If the pool is closed or the timeout expires.
+     * @throws PoolException If the resource was not acquired from this pool, or the pool's factory is internal
+     *   (the pool of {@see \PDO::getPool()}).
      * @throws ServiceUnavailableException
      */
     public function release(mixed $resource): void {}

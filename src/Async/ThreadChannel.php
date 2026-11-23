@@ -62,7 +62,7 @@ final class ThreadChannel implements Awaitable, \Countable
      * @throws ThreadChannelException      If the channel is closed and empty.
      * @throws OperationCanceledException  If the cancellation token fires.
      */
-    public function recv(?Completable $cancellationToken = null) {}
+    public function recv(?Completable $cancellationToken = null): mixed {}
 
     /**
      * Close the channel.

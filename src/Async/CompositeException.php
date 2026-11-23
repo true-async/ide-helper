@@ -15,7 +15,7 @@ namespace Async;
 final class CompositeException extends \Exception
 {
     /** @var \Throwable[] */
-    private array $exceptions = [];
+    private array $exceptions;
 
     /**
      * Add an exception to the composite.

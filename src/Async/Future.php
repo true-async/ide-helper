@@ -110,7 +110,7 @@ final class Future implements Completable
      * @throws \Throwable If the Future was rejected.
      * @throws OperationCanceledException If the cancellation token fires.
      */
-    public function await(?Completable $cancellation = null) {}
+    public function await(?Completable $cancellation = null): mixed {}
 
     /**
      * Return debug information about awaiters of this Future.

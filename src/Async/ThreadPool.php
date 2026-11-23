@@ -45,9 +45,10 @@ final class ThreadPool
      *                                   thread on startup, before any task runs.
      *                                   Typical use: register an autoloader. If
      *                                   the bootloader throws, the pool is failed:
-     *                                   the task channel is closed and all pending
-     *                                   submissions are rejected with
-     *                                   CancellationException.
+     *                                   pending tasks are rejected with the
+     *                                   bootloader's exception, and a later
+     *                                   submit() throws ThreadTransferException
+     *                                   with its message.
      * @param bool          $coroutine   When true, each submitted task runs inside
      *                                   its own coroutine in the worker's scheduler
      *                                   instead of being invoked synchronously.
@@ -67,7 +68,9 @@ final class ThreadPool
      *
      * The callable and any extra arguments are deep-copied to the worker.
      * Returns a Future that resolves with the callable's return value, or
-     * rejects if the callable throws.
+     * rejects if the callable throws. An `exit()` in the task closes its worker
+     * and rejects the Future with ThreadTransferException "ThreadPool worker
+     * terminated via exit()"; the pool does not replace that worker.
      *
      * @template T
      * @param callable(mixed...): T $task    The callable to execute in a worker thread.
@@ -98,8 +101,9 @@ final class ThreadPool
     /**
      * Gracefully shut down the pool.
      *
-     * Rejects new submissions immediately. Already-running tasks complete
-     * normally; pending (queued) tasks are cancelled with ThreadPoolException.
+     * Rejects new submissions immediately. Running and queued tasks still
+     * complete; use {@see cancel()} to reject the queued ones. A coroutine a
+     * worker leaves behind is terminated once `async.shutdown_grace` runs out.
      */
     public function close(): void {}
 

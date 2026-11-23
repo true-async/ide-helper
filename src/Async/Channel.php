@@ -73,7 +73,7 @@ final class Channel implements Awaitable, \IteratorAggregate, \Countable
      * @throws ChannelException If the channel is closed and empty.
      * @throws OperationCanceledException If the cancellation token fires.
      */
-    public function recv(?Completable $cancellationToken = null) {}
+    public function recv(?Completable $cancellationToken = null): mixed {}
 
     /**
      * Receive a value without blocking.

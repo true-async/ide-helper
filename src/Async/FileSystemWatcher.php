@@ -27,8 +27,21 @@ final class FileSystemWatcher implements Awaitable, \IteratorAggregate
      * @param string $path      Absolute or relative path to watch.
      * @param bool   $recursive Watch subdirectories recursively.
      * @param bool   $coalesce  Merge events per file (true) or deliver every event (false).
+     * @param int    $debounceMs Quiet window in milliseconds (0 = disabled, per-event delivery). When > 0 a burst
+     *   of changes is collapsed into ONE event, with `$filename = null`, delivered after $debounceMs of quiet.
+     * @param int    $maxHoldMs  Upper bound in milliseconds on how long a collapsed event is held under a
+     *   never-ending stream of changes (0 = none). Only meaningful with $debounceMs > 0.
+     * @param array  $extensions Case-insensitive extension allow-list, e.g. `['php']` or `['.php', '.env']`
+     *   (empty = every file). Applies in debounce mode.
      */
-    public function __construct(string $path, bool $recursive = false, bool $coalesce = true) {}
+    public function __construct(
+        string $path,
+        bool $recursive = false,
+        bool $coalesce = true,
+        int $debounceMs = 0,
+        int $maxHoldMs = 0,
+        array $extensions = []
+    ) {}
 
     /**
      * Stop monitoring and terminate any active iteration.

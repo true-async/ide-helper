@@ -97,7 +97,7 @@ function suspend(): void {}
  * @since 8.6
  * @see https://true-async.github.io/en/docs/reference/protect.html
  */
-function protect(\Closure $closure) {}
+function protect(\Closure $closure): mixed {}
 
 /**
  * Await the completion of a {@see Completable}.
@@ -113,7 +113,7 @@ function protect(\Closure $closure) {}
  * @since 8.6
  * @see https://true-async.github.io/en/docs/reference/await.html
  */
-function await(Completable $awaitable, ?Completable $cancellation = null) {}
+function await(Completable $awaitable, ?Completable $cancellation = null): mixed {}
 
 /**
  * Await the first trigger to settle; throw if it fails.
@@ -128,7 +128,7 @@ function await(Completable $awaitable, ?Completable $cancellation = null) {}
  * @since 8.6
  * @see https://true-async.github.io/en/docs/reference/await-any-or-fail.html
  */
-function await_any_or_fail(iterable $triggers, ?Awaitable $cancellation = null) {}
+function await_any_or_fail(iterable $triggers, ?Awaitable $cancellation = null): mixed {}
 
 /**
  * Await the first trigger to succeed.
@@ -139,8 +139,8 @@ function await_any_or_fail(iterable $triggers, ?Awaitable $cancellation = null) 
  * @template TValue
  * @param iterable<TKey, Awaitable<TValue>> $triggers
  * @param Awaitable|null      $cancellation
- * @return array{0: TValue, 1: array<TKey, \Throwable>} An array of [$result, $errors]. The first successful result.
- * @throws \Throwable If all triggers fail.
+ * @return array{0: TValue|null, 1: array<TKey, \Throwable>} `[$result, $errors]`: the first successful result,
+ *   or null when every trigger failed, and the errors of the triggers that failed before it.
  * @throws OperationCanceledException If the cancellation token fires.
  * @since 8.6
  * @see https://true-async.github.io/en/docs/reference/await-first-success.html
@@ -225,10 +225,13 @@ function await_any_of(int $count, iterable $triggers, ?Awaitable $cancellation =
 function delay(int $ms): void {}
 
 /**
- * Create a {@see Timeout} that fires after `$ms` milliseconds.
+ * Create a {@see Timeout} cancellation token that trips after `$ms` milliseconds.
  *
- * @param int $ms
- * @return Timeout A Timeout instance.
+ * The token does nothing on its own: it takes effect once it is passed to an operation as its cancellation
+ * argument, as in `await($coroutine, timeout(2000))`. When it trips, the operation is cancelled and the caller
+ * gets an {@see OperationCanceledException} whose getPrevious() is a {@see TimeoutException}.
+ *
+ * @param int $ms Milliseconds.
  * @since 8.6
  * @see https://true-async.github.io/en/docs/reference/timeout.html
  */
@@ -324,6 +327,10 @@ function iterate(iterable $iterable, callable $callback, int $concurrency = 0, b
 
 /**
  * Initiate a graceful shutdown of the scheduler.
+ *
+ * Every coroutine is cancelled; one that outlives the cancellation by `async.shutdown_grace` milliseconds
+ * (default 5000) is terminated: it unwinds as on `exit()`, so no catch block takes it and finally blocks do not
+ * run. `exit()` in any coroutine starts the same shutdown.
  *
  * @param AsyncCancellation|null $cancellationError Optional cancellation reason propagated to running coroutines.
  * @since 8.6

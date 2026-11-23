@@ -92,7 +92,12 @@ final class Scope implements ScopeProvider
     public function awaitAfterCancellation(?callable $errorHandler = null, ?Awaitable $cancellation = null): void {}
 
     /**
-     * Return true if all child coroutines have finished.
+     * Return true once the Scope has finished its work: it is cancelled or closed, or no active coroutine is left
+     * in it or in its child scopes. Zombie coroutines (see {@see disposeSafely()}) do not count.
+     *
+     * Right after cancel(), dispose() or disposeSafely() this is true even while a coroutine of the Scope still
+     * runs, for example cleaning up after catching its cancellation. To wait until the last coroutine has ended,
+     * use {@see awaitAfterCancellation()}.
      */
     public function isFinished(): bool {}
 
@@ -140,7 +145,9 @@ final class Scope implements ScopeProvider
     public function dispose(): void {}
 
     /**
-     * Dispose of the scope, waiting for in-flight coroutines to finish gracefully.
+     * Close the scope without cancelling its coroutines.
+     *
+     * It does not wait: coroutines still running are left to finish as zombies, outside the Scope.
      */
     public function disposeSafely(): void {}
 
