@@ -130,7 +130,12 @@ final class Scope implements ScopeProvider
     public function finally(\Closure $callback): void {}
 
     /**
-     * Cancel and dispose of the scope immediately.
+     * Dispose of the scope immediately.
+     *
+     * Coroutines still running are cancelled, unless the Scope carries the
+     * dispose-safely flag (set by {@see allowZombies()} or inherited from a
+     * parent that has it, such as the main Scope); then they are left to
+     * finish as zombies, exactly as {@see disposeSafely()} does.
      */
     public function dispose(): void {}
 

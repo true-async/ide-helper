@@ -122,6 +122,9 @@ final class Coroutine implements Completable
     /**
      * Return debug information about what this coroutine is currently awaiting.
      *
+     * Reserved: the extension does not fill it yet, so the array is always empty.
+     * {@see getSuspendLocation()} and {@see getTrace()} show where the coroutine stopped.
+     *
      * @return array<string, mixed>
      */
     public function getAwaitingInfo(): array {}

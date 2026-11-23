@@ -138,7 +138,26 @@ final class ThreadPool
     public function getCompletedCount(): int {}
 
     /**
-     * Return the number of worker threads in the pool.
+     * Return the number of worker threads running now.
+     *
+     * A worker leaves the count when its thread returns, so a closed pool
+     * reports 0 once its workers have drained, and a pool that lost a thread
+     * reports one less than it was constructed with.
      */
     public function getWorkerCount(): int {}
+
+    /**
+     * Replace the pool's workers in place, one for one.
+     *
+     * Fresh worker threads start on a new task channel and re-run the
+     * bootloader, so code changes picked up by opcache take effect. Old
+     * workers finish their in-flight tasks and exit; new submissions go to the
+     * fresh workers, and the pool keeps accepting throughout. Replacements
+     * start as old workers drain, so the worker count stays near N.
+     *
+     * Must be called from within a coroutine: it suspends until the old
+     * workers have drained. Overlapping calls serialize; when this call
+     * returns, no live worker predates it.
+     */
+    public function reload(): void {}
 }
